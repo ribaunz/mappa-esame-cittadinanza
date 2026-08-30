@@ -27,6 +27,28 @@ manuale ufficiale copre la procedura di naturalizzazione, il requisito di ingles
 Le aree 4-8 seguono i cinque capitoli di *Life in the United Kingdom: A Guide for New
 Residents*, 3ª edizione (2013), l'unica fonte da cui escono le domande d'esame.
 
+## Due formati
+
+**Mappa interattiva** (`index.html`) — da esplorare a schermo, area per area.
+
+**Poster stampabile** (`poster.html`) — le stesse 63 voci su **un solo foglio**, in A3
+orizzontale (da parete) o A4 orizzontale (da scrivania), con in fondo una fascia di ripasso:
+la linea del tempo delle date che tornano più spesso, i numeri dell'esame, i numeri della
+domanda, le cifre delle istituzioni e le quattro nazioni con i loro santi patroni.
+Il corpo del testo si adatta da solo per stare sempre in una pagina sola.
+
+Tre PDF già pronti in `stampa/`:
+
+| File | Formato |
+|------|---------|
+| `poster-cittadinanza-A3-it.pdf` | A3 orizzontale, italiano |
+| `poster-cittadinanza-A4-it.pdf` | A4 orizzontale, italiano |
+| `poster-citizenship-A3-en.pdf` | A3 orizzontale, inglese |
+
+Per la resa tipografica migliore conviene però stampare da `poster.html` nel browser
+(*Stampa* → orizzontale, margini nulli, grafica di sfondo attiva): i PDF qui sopra sono
+stati generati in un ambiente senza accesso a Google Fonts e usano caratteri sostitutivi.
+
 ## Come si usa
 
 - **Mappa** — trascina per spostarti, rotella o pinch per zoomare, tocca un'area per aprire
@@ -42,21 +64,27 @@ Residents*, 3ª edizione (2013), l'unica fonte da cui escono le domande d'esame.
 ## Struttura del progetto
 
 ```
-index.html            pagina principale
-assets/data.js        i 63 nodi bilingui (contenuti e link)
-assets/style.css      foglio di stile, token di colore per tema chiaro e scuro
+index.html            mappa interattiva
+poster.html           poster stampabile A3 / A4
+assets/data.js        i 63 nodi bilingui (contenuti e link) — sorgente unica
+assets/style.css      stile della mappa, token di colore per tema chiaro e scuro
 assets/app.js         layout radiale, pan/zoom, pannello, ricerca, indice
-build.py              compila tutto in un unico file autonomo
-dist/                 il file autonomo prodotto da build.py
+assets/poster.css     stile del poster (foglio sempre bianco, misure in mm)
+assets/poster.js      composizione del poster, fascia di ripasso, adattamento del corpo
+build.py              compila mappa e poster in file autonomi
+dist/                 i file autonomi prodotti da build.py
+stampa/               i PDF pronti da stampare
 ```
 
-Nessuna dipendenza, nessun processo di build obbligatorio: `index.html` si apre
-direttamente nel browser. Per ottenere un unico file da condividere o mettere offline:
+Nessuna dipendenza, nessun processo di build obbligatorio: `index.html` e `poster.html`
+si aprono direttamente nel browser. Per ottenere i file singoli da condividere o mettere
+offline:
 
 ```sh
-python3 build.py     # → dist/mappa-cittadinanza-uk.html
+python3 build.py     # → dist/mappa-cittadinanza-uk.html e dist/poster-cittadinanza-uk.html
 ```
 
+Mappa e poster leggono lo stesso `assets/data.js`: una correzione si riflette su entrambi.
 Per aggiungere o correggere una voce basta modificare `assets/data.js`: ogni nodo ha
 `id`, `p` (il genitore), `code`, titolo e sintesi bilingui, blocchi di contenuto
 (`p`, `ul`, `kv`, `warn`) e i link di approfondimento. Il layout si adatta da solo.

@@ -1,0 +1,410 @@
+/* ============================================================
+   Bussola della Cittadinanza — poster stampabile
+   Il foglio è sempre carta bianca (è una stampa, non un'interfaccia);
+   solo la scrivania intorno segue il tema del lettore.
+   ============================================================ */
+
+:root {
+  --desk: #DDE2DC;
+  --desk-ink: #14202E;
+  --desk-mute: #5B6A7C;
+  --desk-line: #C4CCC4;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0C1219;
+    --desk-ink: #E5EDF4;
+    --desk-mute: #92A3B4;
+    --desk-line: #26323F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0C1219;
+  --desk-ink: #E5EDF4;
+  --desk-mute: #92A3B4;
+  --desk-line: #26323F;
+  color-scheme: dark;
+}
+
+/* --- tavolozza del foglio: fissa, calibrata per l'inchiostro --- */
+.poster {
+  --ink:    #14202E;
+  --ink-2:  #4A5A6E;
+  --ink-3:  #7C8B9B;
+  --rule:   #C3CCC4;
+  --rule-2: #DFE4DD;
+  --wash:   #F2F5F0;
+  --accent: #A81D26;
+
+  --c1: #1F3E6E; --c2: #A81D26; --c3: #1B6B63;
+  --c4: #6B3A6E; --c5: #3D6B2E; --c6: #8A5A17;
+  --c7: #A03A5C; --c8: #2A5680; --c9: #7A6410;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--desk);
+  color: var(--desk-ink);
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================ COMANDI ============================ */
+
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--desk) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--desk-line);
+  flex-wrap: wrap;
+}
+.controls .title {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin-right: auto;
+}
+.controls .title small {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--desk-mute);
+  margin-left: 8px;
+}
+.ctl {
+  height: 32px;
+  padding: 0 11px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--desk-ink);
+  background: color-mix(in srgb, var(--desk) 60%, #fff 40%);
+  border: 1px solid var(--desk-line);
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctl:hover { border-color: var(--desk-mute); }
+.ctl[aria-pressed="true"] { background: var(--desk-ink); color: var(--desk); border-color: var(--desk-ink); }
+.ctl.primary { background: #A81D26; border-color: #A81D26; color: #fff; }
+.ctl.primary:hover { background: #8E141C; }
+.seg { display: inline-flex; border: 1px solid var(--desk-line); border-radius: 7px; overflow: hidden; }
+.seg .ctl { border: 0; border-radius: 0; }
+.seg .ctl + .ctl { border-left: 1px solid var(--desk-line); }
+:focus-visible { outline: 2px solid #A81D26; outline-offset: 2px; }
+
+/* ============================= IL FOGLIO ============================= */
+
+.desk { padding: 22px 14px 60px; display: flex; justify-content: center; }
+.scaler { transform-origin: top center; }
+
+.poster {
+  width: var(--pw);
+  height: var(--ph);
+  padding: var(--pad);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0,0,0,.14), 0 18px 50px rgba(0,0,0,.18);
+  font-size: var(--fs);
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* A3 orizzontale — il formato da parete */
+.poster[data-size="a3"] { --pw: 420mm; --ph: 297mm; --pad: 9mm; --fs: 2.95mm; }
+/* A4 orizzontale — la stessa mappa, da scrivania */
+.poster[data-size="a4"] { --pw: 297mm; --ph: 210mm; --pad: 6.4mm; --fs: 2.086mm; }
+
+/* ============================== TESTATA ============================== */
+
+.phead {
+  display: flex;
+  align-items: flex-end;
+  gap: 2em;
+  padding-bottom: 1.1em;
+  border-bottom: 0.55mm solid var(--ink);
+  flex: none;
+}
+
+.phead .root { flex: none; max-width: 62em; }
+.phead .kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .78em;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: .5em;
+}
+.phead h1 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 4.1em;
+  font-weight: 600;
+  line-height: .96;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.phead h1 span {
+  display: block;
+  font-size: .46em;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0;
+  margin-top: .35em;
+}
+.phead .blurb {
+  font-size: 1.05em;
+  color: var(--ink-2);
+  max-width: 44em;
+  margin: 0 0 .2em;
+}
+.phead .blurb b { color: var(--ink); font-weight: 600; }
+
+.statstrip {
+  margin-left: auto;
+  display: flex;
+  gap: 1.4em;
+  flex: none;
+  padding-bottom: .2em;
+}
+.statstrip div { text-align: right; }
+.statstrip .n {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 2.5em;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+.statstrip .l {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .72em;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-top: .45em;
+}
+
+/* ============================== LA MAPPA ============================== */
+
+.map { flex: 1; display: flex; flex-direction: column; min-height: 0; padding-top: 1.6em; }
+
+/* il tronco: una linea orizzontale da cui scendono i nove rami */
+.trunk {
+  height: 0.45mm;
+  background: var(--ink);
+  position: relative;
+  flex: none;
+  margin: 0 0 0 0;
+}
+.trunk::before {
+  content: "";
+  position: absolute;
+  left: 0; top: -1.1mm;
+  width: 2.2mm; height: 2.2mm;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0 1.1em;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+.col { display: flex; flex-direction: column; min-width: 0; }
+
+/* il gambo che collega il tronco al riquadro dell'area */
+.col .stem { height: 2.6em; width: 0.4mm; background: var(--hue); margin-left: 1.1em; flex: none; }
+
+.hub {
+  border: 0.4mm solid var(--hue);
+  border-left-width: 1.1mm;
+  border-radius: 1mm;
+  padding: .6em .7em .65em;
+  flex: none;
+}
+.hub .code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .74em;
+  letter-spacing: .1em;
+  color: var(--hue);
+  font-weight: 500;
+}
+.hub h2 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.32em;
+  font-weight: 600;
+  line-height: 1.08;
+  margin: .15em 0 .12em;
+  text-wrap: balance;
+}
+.hub .en {
+  font-family: "Newsreader", Georgia, serif;
+  font-style: italic;
+  font-size: .92em;
+  color: var(--ink-3);
+  line-height: 1.15;
+  display: block;
+}
+.hub .lead {
+  font-size: .84em;
+  line-height: 1.24;
+  color: var(--ink-2);
+  margin: .5em 0 0;
+  padding-top: .45em;
+  border-top: 0.2mm solid var(--rule-2);
+}
+
+/* la colonna di voci, appesa a una guida verticale */
+.leaves {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.5em;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: .62em;
+  padding-top: .75em;
+}
+.leaves::before {
+  content: "";
+  position: absolute;
+  left: 1.1em; top: 0; bottom: .9em;
+  width: 0.28mm;
+  background: color-mix(in srgb, var(--hue) 55%, #fff);
+}
+.leaves li { position: relative; padding-left: .1em; }
+.leaves li::before {
+  content: "";
+  position: absolute;
+  left: -.4em; top: .62em;
+  width: .35em; height: 0.28mm;
+  background: color-mix(in srgb, var(--hue) 55%, #fff);
+}
+.leaves .code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .7em;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.leaves .it { font-size: .98em; font-weight: 600; line-height: 1.16; display: block; }
+.leaves .en {
+  font-size: .86em;
+  font-style: italic;
+  color: var(--ink-3);
+  line-height: 1.14;
+  display: block;
+  font-family: "Newsreader", Georgia, serif;
+}
+
+/* =========================== FASCIA IN BASSO =========================== */
+
+.facts {
+  flex: none;
+  margin-top: 1.4em;
+  padding-top: 1em;
+  border-top: 0.55mm solid var(--ink);
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
+  gap: 0 1.6em;
+}
+.facts section { min-width: 0; }
+.facts h3 {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .74em;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 .7em;
+  font-weight: 500;
+}
+.facts dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .34em .8em; }
+.facts dt {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .82em;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.facts dd { margin: 0; font-size: .88em; color: var(--ink-2); line-height: 1.25; }
+.facts dd b { color: var(--ink); font-weight: 600; }
+
+.timeline { grid-column: 1 / -1; margin-bottom: 1.1em; }
+.tlrow { display: flex; align-items: stretch; border-top: 0.28mm solid var(--rule); padding-top: .5em; gap: 0; }
+.tlrow div {
+  flex: 1;
+  min-width: 0;
+  padding-right: .7em;
+  border-left: 0.28mm solid var(--rule);
+  padding-left: .5em;
+  position: relative;
+}
+.tlrow div:first-child { border-left: 0; padding-left: 0; }
+.tlrow .y {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .88em;
+  font-weight: 500;
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+.tlrow .e { font-size: .82em; color: var(--ink-2); line-height: 1.16; display: block; margin-top: .15em; }
+
+.colophon {
+  grid-column: 1 / -1;
+  margin-top: 1em;
+  padding-top: .7em;
+  border-top: 0.28mm solid var(--rule-2);
+  display: flex;
+  gap: 1.5em;
+  align-items: baseline;
+  font-size: .8em;
+  color: var(--ink-3);
+}
+.colophon .warn { color: var(--ink-2); }
+.colophon .warn b { color: var(--accent); font-weight: 600; }
+.colophon .src { margin-left: auto; font-family: "IBM Plex Mono", monospace; letter-spacing: .04em; white-space: nowrap; }
+
+/* =============================== STAMPA =============================== */
+
+@page { margin: 0; }
+.poster[data-size="a3"] { page-break-after: avoid; }
+
+@media print {
+  body { background: #fff; }
+  .controls, .deskhint { display: none !important; }
+  .desk { padding: 0; display: block; }
+  .scaler { transform: none !important; }
+  .poster { box-shadow: none; }
+}
+
+.deskhint {
+  text-align: center;
+  color: var(--desk-mute);
+  font-size: 12px;
+  padding: 18px 14px 0;
+}
