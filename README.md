@@ -27,7 +27,7 @@ manuale ufficiale copre la procedura di naturalizzazione, il requisito di ingles
 Le aree 4-8 seguono i cinque capitoli di *Life in the United Kingdom: A Guide for New
 Residents*, 3ª edizione (2013), l'unica fonte da cui escono le domande d'esame.
 
-## Tre formati
+## Quattro formati
 
 **Mappa interattiva** (`index.html`) — da esplorare a schermo, area per area.
 
@@ -42,6 +42,12 @@ fatti dei cinque capitoli del manuale, ognuno per esteso. Niente procedura, nien
 burocrazia. Si impagina da solo su 3 pagine A4 verticali o 2 pagine A3 orizzontali,
 con i titoli ripetuti quando un argomento prosegue nella colonna successiva.
 
+**Diagramma di flusso** (`flow.html`) — il rovescio del foglio di ripasso: non i concetti
+ma il **percorso decisionale**. Quindici nodi lungo una colonna centrale, otto rami
+laterali con i numeri di ogni requisito. Bordo tratteggiato = si torna alla stessa domanda;
+rail rosso = il percorso si ferma lì. Sta in **una sola pagina A3 verticale** (due A4): il
+corpo del testo scende quel tanto che basta perché ci stia, senza mai tagliare nulla.
+
 PDF già pronti in `stampa/`:
 
 | File | Formato | Contenuto |
@@ -52,6 +58,9 @@ PDF già pronti in `stampa/`:
 | `life-in-the-uk-facts-A4-en.pdf` | A4 verticale, 3 pagine | i 193 fatti, inglese |
 | `life-in-the-uk-facts-A3-en.pdf` | A3 orizzontale, 2 pagine | i 193 fatti, inglese |
 | `life-in-the-uk-fatti-A4-it.pdf` | A4 verticale, 3 pagine | i 193 fatti, italiano |
+| `flusso-cittadinanza-A3-it.pdf` | A3 verticale, 1 pagina | diagramma di flusso, italiano |
+| `flusso-cittadinanza-A4-it.pdf` | A4 verticale, 2 pagine | diagramma di flusso, italiano |
+| `citizenship-flowchart-A3-en.pdf` | A3 verticale, 1 pagina | diagramma di flusso, inglese |
 
 Per la resa tipografica migliore conviene però stampare dalle pagine nel browser
 (*Stampa* → margini nulli, grafica di sfondo attiva): i PDF qui sopra sono stati generati
@@ -75,6 +84,7 @@ in un ambiente senza accesso a Google Fonts e usano caratteri sostitutivi.
 index.html            mappa interattiva
 poster.html           poster stampabile A3 / A4
 facts.html            foglio di ripasso, solo i concetti d'esame
+flow.html             diagramma di flusso del percorso decisionale
 assets/data.js        i 63 nodi bilingui (contenuti e link) — sorgente unica
 assets/style.css      stile della mappa, token di colore per tema chiaro e scuro
 assets/app.js         layout radiale, pan/zoom, pannello, ricerca, indice
@@ -82,7 +92,9 @@ assets/poster.css     stile del poster (foglio sempre bianco, misure in mm)
 assets/poster.js      composizione del poster, fascia di ripasso, adattamento del corpo
 assets/facts.css      stile del foglio di ripasso
 assets/facts.js       impaginazione su più pagine, colonna per colonna
-build.py              compila i tre file autonomi
+assets/flow.css       stile del diagramma (colonna centrale, rami, frecce)
+assets/flow.js        i nodi del percorso e l'adattamento al numero di pagine
+build.py              compila i quattro file autonomi
 dist/                 i file autonomi prodotti da build.py
 stampa/               i PDF pronti da stampare
 ```
@@ -92,11 +104,12 @@ si aprono direttamente nel browser. Per ottenere i file singoli da condividere o
 offline:
 
 ```sh
-python3 build.py     # → i tre file in dist/
+python3 build.py     # → i quattro file in dist/
 ```
 
 Mappa, poster e foglio di ripasso leggono lo stesso `assets/data.js`: una correzione si
-riflette su tutti e tre.
+riflette su tutti e tre. Il diagramma di flusso ha invece i suoi nodi in `assets/flow.js`,
+perché descrive un percorso decisionale, non la stessa gerarchia di argomenti.
 Per aggiungere o correggere una voce basta modificare `assets/data.js`: ogni nodo ha
 `id`, `p` (il genitore), `code`, titolo e sintesi bilingui, blocchi di contenuto
 (`p`, `ul`, `kv`, `warn`) e i link di approfondimento. Il layout si adatta da solo.

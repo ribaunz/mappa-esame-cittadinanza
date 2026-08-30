@@ -1,0 +1,1785 @@
+<meta charset="utf-8">
+<title>Dal visto al passaporto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+<style>
+/* ============================================================
+   Dal visto al passaporto — diagramma di flusso stampabile
+   Colonna centrale = il percorso; colonna destra = cosa fare
+   quando la risposta è no. Bordo tratteggiato: si rientra nel
+   flusso. Rail rosso: il percorso si ferma.
+   ============================================================ */
+
+:root {
+  --desk: #DDE2DC;
+  --desk-ink: #14202E;
+  --desk-mute: #5B6A7C;
+  --desk-line: #C4CCC4;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0C1219; --desk-ink: #E5EDF4; --desk-mute: #92A3B4; --desk-line: #26323F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0C1219; --desk-ink: #E5EDF4; --desk-mute: #92A3B4; --desk-line: #26323F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--desk);
+  color: var(--desk-ink);
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================ COMANDI ============================ */
+
+.controls {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--desk) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--desk-line);
+}
+.controls .title {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 17px; font-weight: 600; margin-right: auto;
+}
+.controls .title small {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--desk-mute); margin-left: 8px;
+}
+.ctl {
+  height: 32px; padding: 0 11px;
+  font: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--desk-ink);
+  background: color-mix(in srgb, var(--desk) 60%, #fff 40%);
+  border: 1px solid var(--desk-line); border-radius: 7px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.ctl:hover { border-color: var(--desk-mute); }
+.ctl[aria-pressed="true"] { background: var(--desk-ink); color: var(--desk); border-color: var(--desk-ink); }
+.ctl.primary { background: #A81D26; border-color: #A81D26; color: #fff; }
+.ctl.primary:hover { background: #8E141C; }
+.seg { display: inline-flex; border: 1px solid var(--desk-line); border-radius: 7px; overflow: hidden; }
+.seg .ctl { border: 0; border-radius: 0; }
+.seg .ctl + .ctl { border-left: 1px solid var(--desk-line); }
+:focus-visible { outline: 2px solid #A81D26; outline-offset: 2px; }
+
+.deskhint { text-align: center; color: var(--desk-mute); font-size: 12px; padding: 16px 14px 0; }
+
+/* ============================= LE PAGINE ============================= */
+
+.desk { padding: 20px 14px 60px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.scaler { transform-origin: top center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+.sheet {
+  --ink:    #14202E;
+  --ink-2:  #46566A;
+  --ink-3:  #7C8B9B;
+  --rule:   #C3CCC4;
+  --rule-2: #E2E7E0;
+  --wash:   #F3F6F1;
+  --accent: #A81D26;
+  --p1: #1F3E6E; --p2: #1B6B63; --p3: #8A5A17; --p4: #6B3A6E; --p5: #2A5680;
+
+  width: var(--pw); height: var(--ph); padding: var(--pad);
+  background: #fff; color: var(--ink);
+  font-size: var(--fs); line-height: 1.3;
+  box-shadow: 0 2px 8px rgba(0,0,0,.14), 0 18px 50px rgba(0,0,0,.18);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.pages[data-size="a3"] .sheet { --pw: 297mm; --ph: 420mm; --pad: 13mm; --fs: 2.85mm; --spine: 132mm; --gut: 17mm; }
+.pages[data-size="a4"] .sheet { --pw: 210mm; --ph: 297mm; --pad: 9mm; --fs: 2.08mm; --spine: 80mm; --gut: 9mm; }
+
+/* ------------------------------ testata ------------------------------ */
+
+.masthead { flex: none; border-bottom: 0.5mm solid var(--ink); padding-bottom: .9em; margin-bottom: 1.1em; }
+.masthead .kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .8em; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); display: block; margin-bottom: .5em;
+}
+.masthead .row2 { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1em 2em; }
+.masthead h1 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 3.2em; font-weight: 600; line-height: .98;
+  letter-spacing: -0.02em; margin: 0; flex: none;
+}
+.masthead h1 span {
+  display: block; font-size: .42em; font-style: italic; font-weight: 400;
+  color: var(--ink-3); letter-spacing: 0; margin-top: .4em;
+}
+.masthead .note { font-size: .95em; color: var(--ink-2); margin: 0 0 .2em; flex: 1 1 24em; min-width: 18em; }
+.masthead .note b { color: var(--ink); font-weight: 600; }
+
+.key { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3em 1.2em; flex: 1 1 100%; }
+.key li { display: flex; align-items: center; gap: .45em; font-size: .82em; color: var(--ink-2); }
+.key .chip { width: 1.5em; height: .85em; border-radius: .15em; flex: none; }
+.key .chip.start { background: var(--ink); }
+.key .chip.d { border: 0.45mm solid var(--ink); background: #fff; }
+.key .chip.step { border: 0.25mm solid var(--rule); background: var(--wash); }
+.key .chip.act { border: 0.35mm dashed var(--ink-3); background: #fff; }
+.key .chip.exit { border: 0.25mm solid var(--rule); border-left: 0.9mm solid var(--accent); background: #fff; }
+
+.runhead {
+  flex: none; display: flex; align-items: baseline; gap: 1em;
+  border-bottom: 0.3mm solid var(--rule); padding-bottom: .5em; margin-bottom: 1em;
+  font-family: "IBM Plex Mono", monospace; font-size: .8em;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+}
+.runhead b { color: var(--ink); font-weight: 500; }
+.runhead .r { margin-left: auto; letter-spacing: .04em; }
+
+/* ============================== IL FLUSSO ============================== */
+
+.flow { flex: 1; min-height: 0; overflow: hidden; }
+
+.band {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: .7em;
+  align-items: baseline;
+  border-top: 0.55mm solid var(--hue);
+  padding-top: .5em;
+  margin: 1.15em 0 .7em;
+  width: calc(var(--spine) + var(--gut) + 2em);
+}
+.band:first-child { margin-top: 0; }
+.band .num {
+  grid-row: 1 / 3;
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 2em; font-weight: 600; line-height: 1;
+  color: var(--hue); align-self: center;
+}
+.band h2 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.5em; font-weight: 600; margin: 0; line-height: 1.1;
+}
+.band p { margin: .1em 0 0; font-size: .9em; color: var(--ink-3); }
+
+/* ------------------------- riga: nodo + ramo ------------------------- */
+
+.row { display: grid; grid-template-columns: var(--spine) var(--gut) 1fr; align-items: start; }
+.row.nobranch { grid-template-columns: var(--spine); }
+.main { display: flex; flex-direction: column; align-items: stretch; }
+
+.node {
+  border: 0.25mm solid var(--rule);
+  border-radius: 1mm;
+  padding: .5em .7em .55em;
+  background: #fff;
+  position: relative;
+}
+.node h3 { font-size: 1.12em; font-weight: 700; margin: 0; line-height: 1.16; letter-spacing: -0.005em; }
+.node p { margin: .3em 0 0; font-size: .93em; color: var(--ink-2); line-height: 1.26; }
+.node p b, .node p strong { color: var(--ink); font-weight: 700; }
+.node p i, .node p em { font-style: italic; }
+
+.node.start, .node.end {
+  background: var(--ink); border-color: var(--ink); color: #fff; border-radius: 2mm;
+  padding: .75em .9em .8em;
+}
+.node.start h3, .node.end h3 { font-family: "Newsreader", Georgia, serif; font-size: 1.5em; font-weight: 600; }
+.node.start p, .node.end p { color: #C9D6E2; }
+.node.start p b, .node.end p b { color: #fff; }
+
+.node.d { border-width: 0.45mm; border-color: var(--ink); padding-left: 1.9em; }
+.node.d .mark { position: absolute; left: .7em; top: .62em; font-size: .8em; color: var(--accent); }
+
+.node.step { background: var(--wash); }
+
+.node.fork { border: 0; padding: 0; }
+.node.fork .q {
+  font-size: 1.12em; font-weight: 700; color: var(--ink); margin: 0 0 .45em;
+  padding-left: 1.2em; position: relative;
+}
+.node.fork .q::before { content: "◆"; position: absolute; left: 0; font-size: .8em; color: var(--accent); top: .12em; }
+.node.fork .panes { display: grid; grid-template-columns: 1fr 1fr; gap: .8em; }
+.node.fork .pane { border: 0.25mm solid var(--rule); border-top: 0.7mm solid var(--ink); border-radius: 1mm; padding: .55em .7em .6em; }
+.node.fork .pane h3 { font-size: .98em; }
+
+/* --------------------------- i collegamenti --------------------------- */
+
+.vlink { height: 2.8em; position: relative; display: flex; justify-content: center; }
+.vlink svg { width: 10px; height: 100%; overflow: visible; }
+.vlink svg line { stroke: var(--ink); stroke-width: 1.4; }
+.vlink svg polygon { fill: var(--ink); }
+.vlink .lbl {
+  position: absolute; left: 50%; top: 40%;
+  transform: translate(.6em, -50%);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .78em; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-2); background: #fff; padding: 0 .3em;
+}
+
+.hlink { position: relative; display: flex; align-items: flex-start; padding-top: 1.15em; }
+.hlink svg { width: 100%; height: 10px; overflow: visible; }
+.hlink svg line { stroke: var(--ink-2); stroke-width: 1.3; }
+.hlink svg polygon { fill: var(--ink-2); }
+.hlink .lbl {
+  position: absolute; left: 50%; top: .1em; transform: translateX(-50%);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .78em; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* ----------------------------- ramo laterale ----------------------------- */
+
+.node.side { margin-top: .28em; }
+.node.side h4 { font-size: 1.02em; font-weight: 700; margin: 0; line-height: 1.16; }
+.node.side p { margin: .3em 0 0; font-size: .9em; }
+.node.side .tail {
+  display: block; margin-top: .5em; padding-top: .35em;
+  border-top: 0.2mm solid var(--rule-2);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .76em; letter-spacing: .04em; color: var(--ink-3);
+}
+.node.side.back { border-style: dashed; border-color: var(--ink-3); border-width: 0.35mm; }
+.node.side.exit { border-left: 0.9mm solid var(--accent); }
+.node.side.exit .tail { color: var(--accent); }
+
+.contd {
+  margin: .9em 0 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .8em; letter-spacing: .06em; color: var(--ink-3);
+  border-top: 0.3mm dashed var(--rule); padding-top: .5em;
+  width: calc(var(--spine) + var(--gut) + 2em);
+}
+
+/* ---------------------------- piè di pagina ---------------------------- */
+
+.foot {
+  flex: none; margin-top: .9em; padding-top: .5em;
+  border-top: 0.3mm solid var(--rule);
+  display: flex; gap: 1.2em; align-items: baseline;
+  font-size: .78em; color: var(--ink-3);
+}
+.foot > span:first-child { min-width: 0; }
+.foot .pg { margin-left: auto; white-space: nowrap; flex: none; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+/* =============================== STAMPA =============================== */
+
+@page { margin: 0; }
+
+@media print {
+  body { background: #fff; }
+  .controls, .deskhint { display: none !important; }
+  .desk { padding: 0; display: block; gap: 0; }
+  .scaler { transform: none !important; height: auto !important; display: block; gap: 0; }
+  .sheet { box-shadow: none; break-after: page; }
+  .sheet:last-child { break-after: auto; }
+}
+
+</style>
+<div id="app"></div>
+<script>
+/* Mappa concettuale — Cittadinanza britannica / British citizenship
+   Dati bilingui IT/EN. Aggiornati ad agosto 2026.
+   Ogni nodo: id, p(parent), code, t(titolo), lead(sintesi), body(blocchi), links, tag */
+
+const MAPPA = {
+  meta: {
+    updated: "2026-08-30",
+    title: { it: "Bussola della Cittadinanza", en: "Citizenship Compass" }
+  },
+  nodes: [
+
+/* ============ RADICE ============ */
+{
+  id: "root", p: null, code: "·", tag: "root",
+  t: { it: "Cittadinanza britannica", en: "British citizenship" },
+  lead: {
+    it: "Tutto ciò che serve per l'esame di cittadinanza nel Regno Unito: la procedura, il Life in the UK Test, l'inglese e i cinque capitoli del manuale ufficiale.",
+    en: "Everything you need for UK citizenship: the process, the Life in the UK Test, the English requirement and the five chapters of the official handbook."
+  },
+  body: [
+    { p: {
+      it: "Questa mappa è divisa in nove aree. Le tre in alto (Percorso, Test, Inglese) riguardano la <em>procedura</em>: cosa devi fare, quanto costa, quando. Le cinque centrali sono i <em>capitoli del manuale ufficiale</em>, da cui vengono tutte le 24 domande d'esame. L'ultima raccoglie gli <em>aggiornamenti 2026</em>: cosa è cambiato e cosa sta per cambiare.",
+      en: "This map has nine areas. The first three (Route, Test, English) cover the <em>process</em>: what to do, what it costs, when. The five in the middle are the <em>chapters of the official handbook</em>, the source of all 24 exam questions. The last one gathers the <em>2026 updates</em>: what changed and what is about to."
+    } },
+    { kv: [
+      { k: { it: "Esame", en: "Exam" }, v: { it: "Life in the UK Test — 24 domande, 45 minuti, 18/24 per passare", en: "Life in the UK Test — 24 questions, 45 minutes, 18/24 to pass" } },
+      { k: { it: "Costo test", en: "Test fee" }, v: { it: "£50", en: "£50" } },
+      { k: { it: "Fonte ufficiale", en: "Official source" }, v: { it: "<em>Life in the United Kingdom: A Guide for New Residents</em>, 3ª edizione (2013)", en: "<em>Life in the United Kingdom: A Guide for New Residents</em>, 3rd edition (2013)" } },
+      { k: { it: "Inglese", en: "English" }, v: { it: "B1 speaking &amp; listening (sale a B2 dal 26 marzo 2027)", en: "B1 speaking &amp; listening (rising to B2 from 26 March 2027)" } }
+    ] },
+    { warn: {
+      it: "Materiale di studio, non consulenza legale. Tariffe, regole e moduli cambiano: prima di pagare o presentare domanda verifica sempre sulle pagine GOV.UK linkate.",
+      en: "Study material, not legal advice. Fees, rules and forms change: always check the linked GOV.UK pages before paying or applying."
+    } }
+  ],
+  links: [
+    { u: "https://www.gov.uk/british-citizenship", l: "GOV.UK — British citizenship" },
+    { u: "https://www.gov.uk/life-in-the-uk-test", l: "GOV.UK — Life in the UK Test" }
+  ]
+},
+
+/* ============ 1. IL PERCORSO ============ */
+{
+  id: "percorso", p: "root", code: "1", tag: "process",
+  t: { it: "Il percorso", en: "The route" },
+  lead: { it: "Dal visto alla cerimonia: le tappe legali della naturalizzazione.", en: "From visa to ceremony: the legal steps of naturalisation." },
+  body: [ { p: {
+    it: "La cittadinanza è l'ultimo gradino di una scala. Prima il permesso di soggiorno, poi l'<strong>ILR</strong> (residenza permanente), infine la <strong>naturalizzazione</strong>. Il Life in the UK Test serve due volte: per l'ILR e per la cittadinanza — ma si fa una sola volta e vale per sempre.",
+    en: "Citizenship is the last rung of a ladder. First a visa, then <strong>ILR</strong> (settlement), finally <strong>naturalisation</strong>. The Life in the UK Test is needed twice — for ILR and for citizenship — but you sit it once and it lasts for life."
+  } } ],
+  links: [ { u: "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain", l: "GOV.UK — Apply for citizenship with ILR" } ]
+},
+{
+  id: "ilr", p: "percorso", code: "1.1",
+  t: { it: "ILR — residenza permanente", en: "ILR — settlement" },
+  lead: { it: "Indefinite Leave to Remain: il permesso senza scadenza, di norma il passo obbligato prima della cittadinanza.", en: "Indefinite Leave to Remain: the visa with no expiry date, normally the required step before citizenship." },
+  body: [
+    { p: {
+      it: "L'<strong>ILR</strong> (detto anche <em>settlement</em>) toglie ogni limite di tempo al tuo soggiorno e ogni condizione sul lavoro. Nella maggior parte dei percorsi si ottiene dopo <strong>5 anni continuativi</strong> con un visto idoneo (Skilled Worker, coniuge, Global Talent, ecc.).",
+      en: "<strong>ILR</strong> (settlement) removes any time limit on your stay and any condition on work. On most routes you get it after <strong>5 continuous years</strong> on a qualifying visa (Skilled Worker, spouse, Global Talent and so on)."
+    } },
+    { ul: [
+      { it: "Già per l'ILR servono <strong>Life in the UK Test</strong> e <strong>inglese B1</strong> (il requisito “KoLL”: Knowledge of Language and Life).", en: "ILR itself requires the <strong>Life in the UK Test</strong> and <strong>English at B1</strong> (the “KoLL” requirement: Knowledge of Language and Life)." },
+      { it: "L'ILR decade se stai fuori dal Regno Unito per più di <strong>2 anni consecutivi</strong>.", en: "ILR lapses if you stay outside the UK for more than <strong>2 consecutive years</strong>." },
+      { it: "Alcuni percorsi hanno tempi diversi: 10 anni di soggiorno legale continuativo (<em>long residence</em>), 3 anni per alcuni innovatori, 5 anni per l'EU Settlement Scheme.", en: "Some routes differ: 10 years' continuous lawful residence (<em>long residence</em>), 3 years for some innovator routes, 5 years under the EU Settlement Scheme." }
+    ] },
+    { warn: {
+      it: "“Earned settlement”: il Governo ha proposto di portare il periodo standard da 5 a 10 anni. Ad agosto 2026 <strong>non è ancora legge</strong>. Vedi l'area Aggiornamenti 2026.",
+      en: "“Earned settlement”: the Government has proposed raising the standard qualifying period from 5 to 10 years. As of August 2026 it is <strong>not yet law</strong>. See the 2026 Updates area."
+    } }
+  ],
+  links: [
+    { u: "https://www.gov.uk/settle-in-the-uk", l: "GOV.UK — Settle in the UK" },
+    { u: "https://www.gov.uk/indefinite-leave-to-remain", l: "GOV.UK — Indefinite leave to remain" }
+  ]
+},
+{
+  id: "naturalizzazione", p: "percorso", code: "1.2",
+  t: { it: "Naturalizzazione", en: "Naturalisation" },
+  lead: { it: "I requisiti della domanda: età, buon carattere, residenza, lingua e conoscenza della vita nel Regno Unito.", en: "The application requirements: age, good character, residence, language and knowledge of life in the UK." },
+  body: [
+    { p: {
+      it: "La naturalizzazione è regolata dal <strong>British Nationality Act 1981</strong>. Due varianti: la <strong>sezione 6(1)</strong>, percorso standard, e la <strong>sezione 6(2)</strong>, per chi è sposato o unito civilmente con un cittadino britannico.",
+      en: "Naturalisation is governed by the <strong>British Nationality Act 1981</strong>. Two variants: <strong>section 6(1)</strong>, the standard route, and <strong>section 6(2)</strong>, for spouses and civil partners of British citizens."
+    } },
+    { kv: [
+      { k: { it: "Età", en: "Age" }, v: { it: "18 anni compiuti, capacità di intendere e volere", en: "18 or over, of sound mind" } },
+      { k: { it: "Carattere", en: "Character" }, v: { it: "“Good character”: fedina, tasse, immigrazione in regola", en: "“Good character”: criminal record, tax and immigration compliance" } },
+      { k: { it: "Lingua", en: "Language" }, v: { it: "Inglese B1 speaking &amp; listening (o esenzione)", en: "English at B1 speaking &amp; listening (or an exemption)" } },
+      { k: { it: "Conoscenza", en: "Knowledge" }, v: { it: "Life in the UK Test superato", en: "Life in the UK Test passed" } },
+      { k: { it: "Intenzione", en: "Intention" }, v: { it: "Continuare a vivere nel Regno Unito", en: "To continue living in the UK" } },
+      { k: { it: "Sez. 6(1)", en: "s.6(1)" }, v: { it: "ILR da almeno 12 mesi + 5 anni di residenza", en: "ILR held for at least 12 months + 5 years' residence" } },
+      { k: { it: "Sez. 6(2)", en: "s.6(2)" }, v: { it: "Coniuge di britannico: 3 anni di residenza, ILR al momento della domanda, nessuna attesa di 12 mesi", en: "Spouse of a British citizen: 3 years' residence, ILR at the date of application, no 12-month wait" } }
+    ] }
+  ],
+  links: [
+    { u: "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain", l: "GOV.UK — Naturalisation requirements" },
+    { u: "https://www.gov.uk/government/publications/booklet-an-guide-for-naturalisation-as-a-british-citizen", l: "GOV.UK — Booklet AN (guida ufficiale)" }
+  ]
+},
+{
+  id: "residenza", p: "percorso", code: "1.3",
+  t: { it: "Residenza e assenze", en: "Residence and absences" },
+  lead: { it: "I giorni fuori dal Regno Unito si contano: 450 in cinque anni, 90 nell'ultimo anno.", en: "Days outside the UK are counted: 450 over five years, 90 in the final year." },
+  body: [
+    { p: {
+      it: "È il requisito che fa cadere più domande. Il conteggio parte dalla <strong>data esatta in cui l'Home Office riceve la domanda</strong>, cinque (o tre) anni indietro. Un solo giorno di troppo può costare la tassa intera.",
+      en: "This is the requirement that sinks most applications. The clock counts back from the <strong>exact date the Home Office receives your application</strong>, five (or three) years. A single day over can cost you the whole fee."
+    } },
+    { kv: [
+      { k: { it: "Percorso 5 anni", en: "5-year route" }, v: { it: "Max <strong>450 giorni</strong> fuori dal Regno Unito nei 5 anni", en: "No more than <strong>450 days</strong> outside the UK in the 5 years" } },
+      { k: { it: "Percorso coniuge", en: "Spouse route" }, v: { it: "Max <strong>270 giorni</strong> fuori nei 3 anni", en: "No more than <strong>270 days</strong> outside in the 3 years" } },
+      { k: { it: "Ultimi 12 mesi", en: "Final 12 months" }, v: { it: "Max <strong>90 giorni</strong>, in entrambi i percorsi", en: "No more than <strong>90 days</strong>, on either route" } },
+      { k: { it: "Primo giorno", en: "Day one" }, v: { it: "Devi essere fisicamente nel Regno Unito esattamente 5 (o 3) anni prima della domanda", en: "You must have been physically in the UK exactly 5 (or 3) years before the application" } }
+    ] },
+    { p: {
+      it: "L'Home Office ha un margine di discrezionalità per superamenti contenuti, ma non contarci: è discrezionale, non un diritto. Tieni un registro dei viaggi con date di partenza e rientro fin dal primo giorno.",
+      en: "The Home Office has discretion over modest excesses, but do not rely on it: it is discretionary, not a right. Keep a travel log with departure and return dates from day one."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain", l: "GOV.UK — Residence requirements" } ]
+},
+{
+  id: "carattere", p: "percorso", code: "1.4",
+  t: { it: "Good character", en: "Good character" },
+  lead: { it: "Fedina penale, tasse, debiti, precedenti violazioni delle norme sull'immigrazione.", en: "Criminal record, tax, debts and any past immigration breaches." },
+  body: [
+    { p: {
+      it: "Concetto ampio e valutato caso per caso. L'Home Office guarda indietro nel tempo su condanne, multe non pagate, insolvenze, evasione fiscale, inganno nelle domande precedenti e ingressi irregolari.",
+      en: "A broad test, assessed case by case. The Home Office looks back over convictions, unpaid fines, insolvency, tax evasion, deception in earlier applications and irregular entry."
+    } },
+    { ul: [
+      { it: "Le condanne penali comportano periodi di preclusione che dipendono dalla pena (le sentenze più gravi possono precludere in modo permanente).", en: "Criminal convictions trigger exclusion periods that depend on the sentence (the most serious sentences can bar you permanently)." },
+      { it: "Anche le sanzioni non penali contano: multe stradali non pagate, NHS debts sopra soglia, evasione contributiva.", en: "Non-criminal penalties count too: unpaid traffic fines, NHS debts above the threshold, unpaid tax or National Insurance." },
+      { it: "Dichiarare tutto è sempre meglio che omettere: la reticenza scoperta è “deception” e pesa più dell'episodio nascosto.", en: "Always declare: concealment discovered later counts as deception and weighs more heavily than the thing concealed." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/government/publications/good-character-nationality-policy-guidance", l: "GOV.UK — Good character guidance" } ]
+},
+{
+  id: "domanda", p: "percorso", code: "1.5",
+  t: { it: "La domanda", en: "The application" },
+  lead: { it: "Modulo AN online, biometria, due garanti (referees), documenti e tempi di attesa.", en: "Form AN online, biometrics, two referees, documents and processing times." },
+  body: [
+    { kv: [
+      { k: { it: "Modulo", en: "Form" }, v: { it: "<strong>Form AN</strong>, online su GOV.UK", en: "<strong>Form AN</strong>, online on GOV.UK" } },
+      { k: { it: "Biometria", en: "Biometrics" }, v: { it: "Appuntamento UKVCAS: foto e impronte", en: "UKVCAS appointment: photo and fingerprints" } },
+      { k: { it: "Garanti", en: "Referees" }, v: { it: "Due: uno di professione riconosciuta, uno cittadino britannico di 25+ anni; nessuno dei due parente o legale/rappresentante", en: "Two: one of recognised profession, one British citizen aged 25+; neither a relative nor your adviser" } },
+      { k: { it: "Documenti", en: "Documents" }, v: { it: "Passaporto, BRP/eVisa, certificato Life in the UK, certificato inglese, prova di residenza", en: "Passport, BRP/eVisa, Life in the UK certificate, English certificate, proof of residence" } },
+      { k: { it: "Tempi", en: "Timing" }, v: { it: "Di norma decisione entro 6 mesi", en: "Usually decided within 6 months" } }
+    ] },
+    { p: {
+      it: "Puoi tenere il passaporto: dal 2019 non si spedisce più l'originale, si caricano le scansioni. Il Regno Unito è passato all'<strong>eVisa</strong> digitale al posto del BRP fisico: prima della domanda verifica di avere un account UKVI attivo.",
+      en: "You keep your passport: since 2019 you upload scans rather than posting originals. The UK has moved to the digital <strong>eVisa</strong> in place of the physical BRP: check you have a working UKVI account before you apply."
+    } }
+  ],
+  links: [
+    { u: "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain/how-to-apply", l: "GOV.UK — How to apply" },
+    { u: "https://www.gov.uk/get-access-evisa", l: "GOV.UK — eVisa" }
+  ]
+},
+{
+  id: "costi", p: "percorso", code: "1.6",
+  t: { it: "Costi e tempi", en: "Costs and timing" },
+  lead: { it: "Quanto costa davvero: tassa di naturalizzazione, cerimonia, test, inglese, passaporto.", en: "What it really costs: naturalisation fee, ceremony, test, English exam, passport." },
+  body: [
+    { kv: [
+      { k: { it: "Naturalizzazione (adulto)", en: "Naturalisation (adult)" }, v: { it: "circa <strong>£1.839</strong>, di cui £130 di cerimonia, riscossi insieme", en: "about <strong>£1,839</strong>, including the £130 ceremony fee, charged upfront" } },
+      { k: { it: "Life in the UK Test", en: "Life in the UK Test" }, v: { it: "£50 a tentativo, non rimborsabile", en: "£50 per attempt, non-refundable" } },
+      { k: { it: "Test di inglese SELT", en: "SELT English test" }, v: { it: "circa £150 (se non sei esente)", en: "around £150 (if you are not exempt)" } },
+      { k: { it: "Manuale ufficiale", en: "Official handbook" }, v: { it: "circa £13 cartaceo, meno in digitale", en: "about £13 in print, less as an ebook" } },
+      { k: { it: "Passaporto britannico", en: "British passport" }, v: { it: "tassa a parte, dopo la cerimonia", en: "a separate fee, after the ceremony" } }
+    ] },
+    { warn: {
+      it: "Le tariffe dell'Home Office cambiano quasi ogni anno, di solito in primavera. Il totale qui è indicativo per il 2026: <strong>verifica sempre la tabella tariffe ufficiale</strong> prima di pagare. La tassa non viene rimborsata se la domanda è respinta (torna solo la quota cerimonia).",
+      en: "Home Office fees change almost every year, usually in spring. The totals here are indicative for 2026: <strong>always check the official fee table</strong> before paying. The fee is not refunded if your application is refused (only the ceremony portion comes back)."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/government/publications/visa-regulations-revised-table", l: "GOV.UK — Tabella tariffe visti e cittadinanza" } ]
+},
+{
+  id: "cerimonia", p: "percorso", code: "1.7",
+  t: { it: "Cerimonia e giuramento", en: "Ceremony and oath" },
+  lead: { it: "Entro 3 mesi dall'invito: giuramento di fedeltà, promessa e certificato di naturalizzazione.", en: "Within 3 months of the invitation: oath of allegiance, pledge and naturalisation certificate." },
+  body: [
+    { p: {
+      it: "Approvata la domanda ricevi un invito e devi presentarti alla cerimonia <strong>entro 3 mesi</strong>. Si tiene di solito presso il consiglio comunale (<em>local council</em>), con il ritratto del Re e la bandiera.",
+      en: "Once approved you receive an invitation and must attend a ceremony <strong>within 3 months</strong>. It is usually held at your local council, with a portrait of the King and the flag."
+    } },
+    { ul: [
+      { it: "<strong>Oath of allegiance</strong> (giuramento religioso) oppure <strong>affirmation</strong> (dichiarazione laica): fedeltà al Re e ai suoi eredi.", en: "<strong>Oath of allegiance</strong> (religious) or <strong>affirmation</strong> (secular): loyalty to the King and his heirs." },
+      { it: "<strong>Pledge</strong>: promessa di lealtà al Regno Unito, di rispettarne diritti, libertà e leggi.", en: "<strong>Pledge</strong>: loyalty to the UK, respecting its rights, freedoms and laws." },
+      { it: "Si canta o si ascolta l'inno nazionale, <em>God Save the King</em>.", en: "The national anthem, <em>God Save the King</em>, is sung or played." },
+      { it: "Ricevi il <strong>certificato di naturalizzazione</strong>: da quel momento sei cittadino britannico e puoi chiedere il passaporto.", en: "You receive your <strong>naturalisation certificate</strong>: from that moment you are a British citizen and can apply for a passport." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/citizenship-ceremony", l: "GOV.UK — Citizenship ceremonies" } ]
+},
+{
+  id: "doppia", p: "percorso", code: "1.8", tag: "italy",
+  t: { it: "Doppia cittadinanza IT/UK", en: "Dual Italian/British citizenship" },
+  lead: { it: "L'Italia non ti fa perdere la cittadinanza: diventi britannico e resti italiano. Ma l'AIRE va aggiornata.", en: "Italy does not take your citizenship away: you become British and stay Italian. But your AIRE registration must be updated." },
+  body: [
+    { p: {
+      it: "La <strong>legge 91/1992</strong> ammette la doppia cittadinanza: acquisire volontariamente quella britannica <strong>non fa perdere</strong> quella italiana. Anche il Regno Unito accetta la doppia cittadinanza senza limiti.",
+      en: "Italian <strong>Law 91/1992</strong> allows dual nationality: voluntarily acquiring British citizenship <strong>does not cost you</strong> your Italian one. The UK likewise accepts dual citizenship without restriction."
+    } },
+    { ul: [
+      { it: "Resta iscritto all'<strong>AIRE</strong> presso il Consolato Generale d'Italia a Londra (o quello competente per la tua contea) e comunica ogni cambio di indirizzo.", en: "Stay registered with <strong>AIRE</strong> at the Italian Consulate General in London (or the one covering your county) and report every change of address." },
+      { it: "Continuerai a votare per le elezioni politiche italiane per corrispondenza e a rinnovare passaporto e carta d'identità italiani al consolato.", en: "You keep voting by post in Italian national elections and keep renewing your Italian passport and ID card at the consulate." },
+      { it: "Per entrare in Italia usa il documento italiano, per rientrare nel Regno Unito quello britannico: è la regola pratica più semplice.", en: "Use your Italian document to enter Italy and your British one to re-enter the UK: that is the simplest practical rule." },
+      { it: "I figli nati nel Regno Unito da genitore italiano sono italiani <em>iure sanguinis</em>: vanno trascritti al consolato.", en: "Children born in the UK to an Italian parent are Italian <em>iure sanguinis</em>: register their birth with the consulate." }
+    ] }
+  ],
+  links: [
+    { u: "https://conslondra.esteri.it/", l: "Consolato Generale d'Italia a Londra" },
+    { u: "https://www.esteri.it/it/servizi-consolari-e-visti/italiani-all-estero/aire/", l: "Farnesina — AIRE" }
+  ]
+},
+{
+  id: "passaporto", p: "percorso", code: "1.9",
+  t: { it: "Dopo la cittadinanza", en: "After citizenship" },
+  lead: { it: "Passaporto britannico, diritto di voto, e cosa cambia davvero nella vita quotidiana.", en: "British passport, the right to vote, and what actually changes day to day." },
+  body: [
+    { ul: [
+      { it: "<strong>Passaporto britannico</strong>: domanda online con il certificato di naturalizzazione, un garante e le foto.", en: "<strong>British passport</strong>: apply online with your naturalisation certificate, a countersignatory and photos." },
+      { it: "<strong>Voto</strong>: puoi votare in tutte le elezioni, compresi i referendum, e candidarti.", en: "<strong>Voting</strong>: you can vote in every election, referendums included, and stand for office." },
+      { it: "<strong>Nessun controllo sull'immigrazione</strong>: niente più scadenze del visto, niente più <em>Immigration Health Surcharge</em>.", en: "<strong>No immigration control</strong>: no visa expiry dates, no more Immigration Health Surcharge." },
+      { it: "Puoi fare da garante per la cittadinanza di altri e chiedere il passaporto per i figli minorenni.", en: "You can act as a referee for others and apply for passports for your children." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/apply-renew-passport", l: "GOV.UK — Apply for a British passport" } ]
+}
+,
+/* ============ 2. IL TEST ============ */
+{
+  id: "test", p: "root", code: "2", tag: "exam",
+  t: { it: "Life in the UK Test", en: "Life in the UK Test" },
+  lead: { it: "L'esame vero e proprio: come funziona, come si prenota, come si passa.", en: "The exam itself: how it works, how to book it, how to pass it." },
+  body: [ { p: {
+    it: "Un test a scelta multipla al computer, in un centro autorizzato, in inglese (in Galles e Scozia si può richiedere in gallese o gaelico scozzese). Tutte le domande vengono <strong>esclusivamente</strong> dal manuale ufficiale: nulla di ciò che sai dai giornali o dalla vita quotidiana conta, se non è nel libro.",
+    en: "A computer-based multiple-choice test taken at an approved centre, in English (Welsh or Scottish Gaelic can be requested in Wales and Scotland). Every question comes <strong>only</strong> from the official handbook: nothing you know from the news or daily life counts unless it is in the book."
+  } } ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test", l: "GOV.UK — Life in the UK Test" } ]
+},
+{
+  id: "formato", p: "test", code: "2.1",
+  t: { it: "Formato dell'esame", en: "Exam format" },
+  lead: { it: "24 domande, 45 minuti, 18 risposte esatte per passare (75%).", en: "24 questions, 45 minutes, 18 correct answers to pass (75%)." },
+  body: [
+    { kv: [
+      { k: { it: "Domande", en: "Questions" }, v: { it: "24, a scelta multipla, estratte da una banca dati riservata", en: "24, multiple choice, drawn from a confidential question bank" } },
+      { k: { it: "Tempo", en: "Time" }, v: { it: "45 minuti (in media meno di 2 minuti a domanda: abbondante)", en: "45 minutes (under 2 minutes per question on average: plenty)" } },
+      { k: { it: "Soglia", en: "Pass mark" }, v: { it: "<strong>18 su 24</strong> = 75%. Puoi sbagliarne 6", en: "<strong>18 out of 24</strong> = 75%. You can get 6 wrong" } },
+      { k: { it: "Esito", en: "Result" }, v: { it: "Immediato, comunicato in centro; ricevi una lettera di conferma", en: "Immediate, given at the centre; you receive a confirmation letter" } },
+      { k: { it: "Validità", en: "Validity" }, v: { it: "Il certificato <strong>non scade</strong>: vale per ILR e per la cittadinanza", en: "The certificate <strong>never expires</strong>: it counts for both ILR and citizenship" } }
+    ] },
+    { ul: [
+      { it: "Quattro tipi di domanda: scelta singola fra 4 opzioni; <em>vero o falso</em>; “quali <strong>due</strong> affermazioni sono corrette”; “scegli l'affermazione corretta fra due”.", en: "Four question types: one of four options; <em>true or false</em>; “which <strong>two</strong> statements are correct”; “choose the correct statement out of two”." },
+      { it: "Puoi contrassegnare le domande e tornarci prima di consegnare.", en: "You can flag questions and return to them before submitting." },
+      { it: "Nessuna penalità per la risposta sbagliata: non lasciare mai una domanda in bianco.", en: "No penalty for a wrong answer: never leave a question blank." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test", l: "GOV.UK — Test format" } ]
+},
+{
+  id: "prenotazione", p: "test", code: "2.2",
+  t: { it: "Prenotare il test", en: "Booking the test" },
+  lead: { it: "£50 online, almeno 3 giorni lavorativi prima, con l'indirizzo esatto del tuo documento.", en: "£50 online, at least 3 working days ahead, using the exact address on your ID." },
+  body: [
+    { ul: [
+      { it: "Si prenota solo sul sito ufficiale GOV.UK: <strong>£50</strong>, carta di credito o debito.", en: "Book only on the official GOV.UK site: <strong>£50</strong>, credit or debit card." },
+      { it: "Almeno <strong>3 giorni lavorativi</strong> di anticipo; oltre 30 centri autorizzati nel Regno Unito, scegli il più vicino.", en: "At least <strong>3 working days</strong> in advance; over 30 approved centres in the UK — pick the nearest." },
+      { it: "L'<strong>indirizzo</strong> che inserisci deve coincidere <em>esattamente</em> con quello del documento che porterai. È il motivo numero uno per cui la gente viene respinta all'ingresso.", en: "The <strong>address</strong> you enter must match <em>exactly</em> the one on the ID you bring. This is the number-one reason people are turned away at the door." },
+      { it: "Cancellazione o spostamento gratuiti solo con almeno 3 giorni lavorativi di preavviso; altrimenti perdi i £50.", en: "Free cancellation or rescheduling only with at least 3 working days' notice; otherwise you lose the £50." },
+      { it: "Se hai bisogno di supporto (disabilità, dislessia, ipovisione) segnalalo <strong>in fase di prenotazione</strong>: dopo non si può.", en: "If you need support (disability, dyslexia, low vision) request it <strong>when booking</strong>: it cannot be added later." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test/book-your-test", l: "GOV.UK — Book your test" } ]
+},
+{
+  id: "giorno", p: "test", code: "2.3",
+  t: { it: "Il giorno dell'esame", en: "On the day" },
+  lead: { it: "Documento valido, indirizzo corrispondente, niente telefono. Arrivare presto.", en: "Valid ID, matching address, no phone. Arrive early." },
+  body: [
+    { ul: [
+      { it: "Porta un <strong>documento d'identità accettato</strong>: passaporto (anche italiano), BRP, patente di guida britannica con foto, oppure documento di viaggio riconosciuto.", en: "Bring <strong>accepted photo ID</strong>: a passport (an Italian one is fine), BRP, UK photocard driving licence, or a recognised travel document." },
+      { it: "Arriva almeno <strong>15 minuti prima</strong>: in ritardo non ti fanno entrare e perdi la tassa.", en: "Arrive at least <strong>15 minutes early</strong>: latecomers are refused entry and lose the fee." },
+      { it: "Telefoni, borse, orologi e appunti vanno negli armadietti. Niente si porta alla postazione.", en: "Phones, bags, watches and notes go in a locker. Nothing goes to the desk." },
+      { it: "Prima delle 24 domande reali fai alcune <strong>domande di prova</strong> non valutate, per prendere confidenza con lo schermo.", en: "Before the 24 real questions you get some unscored <strong>practice questions</strong> to get used to the screen." },
+      { it: "Il risultato arriva subito; se passi, conserva la lettera: ti servirà sia per l'ILR sia per la cittadinanza.", en: "You get the result immediately; if you pass, keep the letter — you need it for both ILR and citizenship." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test/what-to-take-to-your-test", l: "GOV.UK — What to take to your test" } ]
+},
+{
+  id: "bocciato", p: "test", code: "2.4",
+  t: { it: "Se non passi", en: "If you fail" },
+  lead: { it: "Nessun limite di tentativi, ma 7 giorni di attesa e altri £50 ogni volta.", en: "No limit on attempts, but a 7-day wait and another £50 each time." },
+  body: [
+    { ul: [
+      { it: "Puoi ripetere il test <strong>quante volte vuoi</strong>: non c'è un tetto di tentativi.", en: "You can retake the test <strong>as many times as you like</strong>: there is no cap." },
+      { it: "Devi però aspettare almeno <strong>7 giorni</strong> tra un tentativo e l'altro.", en: "But you must wait at least <strong>7 days</strong> between attempts." },
+      { it: "Ogni tentativo costa <strong>£50</strong> pieni: non ci sono sconti sulle ripetizioni.", en: "Each attempt costs the full <strong>£50</strong>: there is no repeat discount." },
+      { it: "Non ti dicono quali domande hai sbagliato. Torna sui capitoli più densi di numeri: storia e istituzioni.", en: "You are not told which questions you got wrong. Go back to the chapters densest in numbers: history and institutions." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test", l: "GOV.UK — Retaking the test" } ]
+},
+{
+  id: "esenzioni", p: "test", code: "2.5",
+  t: { it: "Chi è esente", en: "Who is exempt" },
+  lead: { it: "Under 18, over 65 e chi ha una condizione medica documentata.", en: "Under 18s, over 65s and people with a documented medical condition." },
+  body: [
+    { ul: [
+      { it: "Hai <strong>meno di 18</strong> anni o <strong>65 o più</strong> al momento della domanda.", en: "You are <strong>under 18</strong> or <strong>65 or over</strong> at the date of application." },
+      { it: "Hai una <strong>condizione fisica o mentale</strong> di lungo periodo che ti impedisce di sostenere il test: serve una certificazione medica su modulo ufficiale.", en: "You have a long-term <strong>physical or mental condition</strong> that prevents you sitting it: a doctor's certificate on the official form is required." },
+      { it: "Hai già superato il test in passato per l'ILR: <strong>non lo ripeti</strong>, il certificato resta valido.", en: "You already passed the test for ILR: <strong>you do not retake it</strong>, the certificate stays valid." }
+    ] },
+    { warn: {
+      it: "L'esenzione dal test <em>non</em> è automaticamente esenzione dall'inglese, e viceversa: sono due requisiti distinti, anche se l'età li copre entrambi.",
+      en: "Exemption from the test is <em>not</em> automatically exemption from the English requirement, and vice versa: they are two separate requirements, though age covers both."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test/who-needs-to-take-the-test", l: "GOV.UK — Who needs to take the test" } ]
+},
+{
+  id: "materiale", p: "test", code: "2.6",
+  t: { it: "Materiale ufficiale", en: "Official material" },
+  lead: { it: "Un solo libro conta: <em>Life in the United Kingdom: A Guide for New Residents</em>, 3ª edizione.", en: "Only one book counts: <em>Life in the United Kingdom: A Guide for New Residents</em>, 3rd edition." },
+  body: [
+    { p: {
+      it: "Il manuale è del <strong>2013</strong> ed è ancora l'unica fonte autorizzata nel 2026. È organizzato in <strong>cinque capitoli</strong>: sono le cinque aree centrali di questa mappa. Le domande escono solo da lì.",
+      en: "The handbook dates from <strong>2013</strong> and is still the only authorised source in 2026. It is organised into <strong>five chapters</strong>: the five central areas of this map. Questions come from there and nowhere else."
+    } },
+    { ul: [
+      { it: "Attenzione alle edizioni pirata e ai riassunti non ufficiali: mancano dettagli che vengono chiesti.", en: "Beware pirated editions and unofficial summaries: they drop details that get asked." },
+      { it: "Esistono anche l'<em>Official Study Guide</em> e l'<em>Official Practice Questions and Answers</em>, utili ma non obbligatori.", en: "There are also the <em>Official Study Guide</em> and <em>Official Practice Questions and Answers</em> — useful but not compulsory." },
+      { it: "Il libro <strong>non è tradotto ufficialmente in italiano</strong>. Se l'inglese è ancora incerto, leggi ogni capitolo due volte: una per capire, una per memorizzare i numeri.", en: "There is <strong>no official Italian translation</strong>. If your English is still shaky, read each chapter twice: once to understand, once to memorise the numbers." }
+    ] }
+  ],
+  links: [
+    { u: "https://www.tsoshop.co.uk/life-in-the-uk/", l: "TSO — Manuale ufficiale (editore Home Office)" },
+    { u: "https://www.gov.uk/life-in-the-uk-test/prepare-for-your-test", l: "GOV.UK — Prepare for your test" }
+  ]
+},
+{
+  id: "strategia", p: "test", code: "2.7",
+  t: { it: "Strategia di studio", en: "Study strategy" },
+  lead: { it: "Il test si vince sui numeri e sui nomi propri, non sulla comprensione generale.", en: "The test is won on numbers and proper names, not on general understanding." },
+  body: [
+    { ul: [
+      { it: "<strong>Date e cifre</strong> sono il cuore del test: 1066, 1215, 1801, 1928, 650 MP, 129 MSP. Fai flashcard solo di quelle.", en: "<strong>Dates and figures</strong> are the core: 1066, 1215, 1801, 1928, 650 MPs, 129 MSPs. Make flashcards of those alone." },
+      { it: "<strong>Nomi propri</strong>: chi ha inventato cosa, chi ha scritto cosa, chi ha vinto cosa. Il capitolo 4 è quasi solo elenchi di nomi.", en: "<strong>Proper names</strong>: who invented what, who wrote what, who won what. Chapter 4 is almost entirely name lists." },
+      { it: "Fai <strong>mock test</strong> finché non stai stabilmente sopra il 90%: la soglia reale è 75%, ma l'ansia costa qualche punto.", en: "Do <strong>mock tests</strong> until you are consistently above 90%: the real bar is 75%, but nerves cost a few points." },
+      { it: "Diffida delle domande dei siti non ufficiali quando contraddicono il libro: <strong>vince sempre il manuale</strong>.", en: "Distrust unofficial sites' questions when they contradict the book: <strong>the handbook always wins</strong>." },
+      { it: "Studia il capitolo 3 (storia) per <em>secoli</em>, non per fatti sparsi: la cronologia rende le date molto più facili da ricordare.", en: "Study chapter 3 (history) by <em>century</em>, not as scattered facts: the timeline makes dates far easier to hold." },
+      { it: "Tempo realistico: 3-6 settimane di studio, 45-60 minuti al giorno, per chi parte da zero.", en: "Realistic timeline: 3–6 weeks of study, 45–60 minutes a day, starting from scratch." }
+    ] }
+  ],
+  links: [
+    { u: "https://lifeintheuktests.co.uk/", l: "Mock test gratuiti (non ufficiale)" },
+    { u: "https://lifeintheuktest.com/", l: "Practice test online (non ufficiale)" }
+  ]
+},
+
+/* ============ 3. INGLESE ============ */
+{
+  id: "inglese", p: "root", code: "3", tag: "lang",
+  t: { it: "Requisito di inglese", en: "English requirement" },
+  lead: { it: "B1 speaking &amp; listening: un requisito separato dal test, con esenzioni e regole proprie.", en: "B1 speaking &amp; listening: a separate requirement from the test, with its own exemptions and rules." },
+  body: [ { p: {
+    it: "Il <em>KoLL</em> (Knowledge of Language and Life) è composto da <strong>due gambe</strong>: il Life in the UK Test e la prova di inglese. Servono entrambe, e sono indipendenti: superare l'una non esenta dall'altra.",
+    en: "The <em>KoLL</em> (Knowledge of Language and Life) requirement stands on <strong>two legs</strong>: the Life in the UK Test and proof of English. You need both, and they are independent: passing one does not excuse the other."
+  } } ],
+  links: [ { u: "https://www.gov.uk/english-language", l: "GOV.UK — Prove your English" } ]
+},
+{
+  id: "b1", p: "inglese", code: "3.1",
+  t: { it: "Livello B1", en: "Level B1" },
+  lead: { it: "Solo <em>speaking</em> e <em>listening</em>, al livello intermedio del quadro europeo CEFR.", en: "<em>Speaking</em> and <em>listening</em> only, at intermediate level on the CEFR scale." },
+  body: [
+    { p: {
+      it: "Per cittadinanza e ILR serve il <strong>B1 del CEFR</strong>, limitatamente a <em>parlato</em> e <em>ascolto</em>. Non ti viene chiesto né lettura né scrittura: è una differenza importante rispetto ai test accademici.",
+      en: "For citizenship and ILR you need <strong>CEFR B1</strong>, in <em>speaking</em> and <em>listening</em> only. Reading and writing are not tested: an important difference from academic exams."
+    } },
+    { ul: [
+      { it: "In pratica: capire una conversazione normale su lavoro, scuola, tempo libero; raccontare esperienze e opinioni con frasi semplici ma corrette.", en: "In practice: understanding everyday conversation about work, school and leisure; describing experiences and opinions in simple but correct sentences." },
+      { it: "Il certificato dev'essere di un <strong>SELT</strong> (Secure English Language Test) approvato dall'Home Office, sostenuto in un centro autorizzato.", en: "The certificate must be a Home Office–approved <strong>SELT</strong> (Secure English Language Test) taken at an approved centre." },
+      { it: "Il certificato SELT ha una validità di <strong>2 anni</strong> per molti percorsi di visto, ma una volta usato per l'ILR di norma non va rifatto per la cittadinanza.", en: "SELT certificates are valid for <strong>2 years</strong> on many visa routes, but once used for ILR you normally do not retake it for citizenship." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/english-language/approved-english-language-qualifications", l: "GOV.UK — Approved qualifications" } ]
+},
+{
+  id: "selt", p: "inglese", code: "3.2",
+  t: { it: "Test SELT approvati", en: "Approved SELT tests" },
+  lead: { it: "Cinque fornitori autorizzati. Attenzione: la versione “UKVI” è l'unica valida.", en: "Five approved providers. Careful: only the “UKVI” version counts." },
+  body: [
+    { ul: [
+      { it: "<strong>IELTS for UKVI</strong> (Life Skills B1)", en: "<strong>IELTS for UKVI</strong> (Life Skills B1)" },
+      { it: "<strong>LanguageCert</strong> SELT (International ESOL B1 Speaking &amp; Listening)", en: "<strong>LanguageCert</strong> SELT (International ESOL B1 Speaking &amp; Listening)" },
+      { it: "<strong>Trinity College London</strong> — Integrated Skills in English / GESE grado 5", en: "<strong>Trinity College London</strong> — Integrated Skills in English / GESE grade 5" },
+      { it: "<strong>Pearson</strong> PTE Academic UKVI / PTE Home", en: "<strong>Pearson</strong> PTE Academic UKVI / PTE Home" },
+      { it: "<strong>PSI Services</strong> — Skills for English UKVI", en: "<strong>PSI Services</strong> — Skills for English UKVI" }
+    ] },
+    { warn: {
+      it: "Prenotare la versione accademica o “non-UKVI” dello stesso esame è l'errore più costoso: anche col livello giusto, il certificato viene <strong>rifiutato</strong>. Cerca sempre la dicitura UKVI / SELT e il centro approvato.",
+      en: "Booking the academic or “non-UKVI” version of the same exam is the costliest mistake: even at the right level the certificate is <strong>rejected</strong>. Always look for the UKVI / SELT wording and an approved centre."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/english-language/approved-english-language-qualifications", l: "GOV.UK — Elenco fornitori SELT" } ]
+},
+{
+  id: "esenzioni-eng", p: "inglese", code: "3.3",
+  t: { it: "Esenzioni dall'inglese", en: "English exemptions" },
+  lead: { it: "Nazionalità anglofona, laurea in inglese, età, condizione medica. L'Italia non è esente.", en: "Majority English-speaking nationality, a degree taught in English, age, medical condition. Italy is not exempt." },
+  body: [
+    { ul: [
+      { it: "Sei cittadino di un <strong>paese di lingua inglese riconosciuto</strong> (USA, Canada, Australia, Nuova Zelanda, Irlanda, molti Caraibi…). <strong>L'Italia non è nell'elenco.</strong>", en: "You are a national of a <strong>recognised majority English-speaking country</strong> (USA, Canada, Australia, New Zealand, Ireland, much of the Caribbean…). <strong>Italy is not on the list.</strong>" },
+      { it: "Hai una <strong>laurea insegnata o ricercata in inglese</strong>: se conseguita all'estero serve la conferma <em>Ecctis</em> del livello e della lingua di insegnamento.", en: "You hold a <strong>degree taught or researched in English</strong>: if awarded abroad you need <em>Ecctis</em> confirmation of the level and the language of instruction." },
+      { it: "Hai <strong>meno di 18</strong> o <strong>65 anni o più</strong>.", en: "You are <strong>under 18</strong> or <strong>65 or over</strong>." },
+      { it: "Hai una <strong>condizione medica</strong> di lungo periodo documentata dal medico.", en: "You have a long-term <strong>medical condition</strong> documented by a doctor." },
+      { it: "Hai già dimostrato il B1 per un visto precedente: di norma vale ancora, ma conserva il certificato.", en: "You already proved B1 for an earlier visa: it normally still counts, but keep the certificate." }
+    ] },
+    { p: {
+      it: "Per un cittadino italiano, in pratica: o un SELT B1, o una laurea in inglese verificata da Ecctis. Una laurea italiana in Lingue <em>non</em> basta di per sé.",
+      en: "For an Italian citizen, in practice: either a B1 SELT or a degree taught in English verified by Ecctis. An Italian languages degree is <em>not</em> enough on its own."
+    } }
+  ],
+  links: [
+    { u: "https://www.gov.uk/english-language/exemptions", l: "GOV.UK — Exemptions" },
+    { u: "https://www.ecctis.com/", l: "Ecctis — verifica titoli di studio" }
+  ]
+},
+{
+  id: "b2-2027", p: "inglese", code: "3.4", tag: "update",
+  t: { it: "B2 dal 2027", en: "B2 from 2027" },
+  lead: { it: "Dal 26 marzo 2027 il livello richiesto per il settlement sale da B1 a B2.", en: "From 26 March 2027 the level required for settlement rises from B1 to B2." },
+  body: [
+    { p: {
+      it: "Il Governo ha annunciato l'innalzamento del requisito linguistico: <strong>da B1 a B2</strong> (intermedio superiore) per il settlement, con decorrenza <strong>26 marzo 2027</strong>. Nel 2026 il livello in vigore resta il <strong>B1</strong>.",
+      en: "The Government has announced a rise in the language requirement: <strong>from B1 to B2</strong> (upper-intermediate) for settlement, effective <strong>26 March 2027</strong>. Through 2026 the level in force remains <strong>B1</strong>."
+    } },
+    { ul: [
+      { it: "Se puoi qualificarti prima di quella data, il B1 già sostenuto ti mette al riparo.", en: "If you can qualify before that date, a B1 already sat protects you." },
+      { it: "Il B2 richiede una preparazione sensibilmente maggiore: argomentare, seguire discorsi tecnici, sostenere una conversazione lunga.", en: "B2 needs noticeably more preparation: arguing a point, following technical speech, sustaining a long conversation." },
+      { it: "Verifica il testo definitivo delle <em>Immigration Rules</em>: le date annunciate possono slittare.", en: "Check the final text of the Immigration Rules: announced dates can move." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/guidance/immigration-rules", l: "GOV.UK — Immigration Rules" } ]
+}
+,
+/* ============ 4. CAPITOLO 1 — VALORI ============ */
+{
+  id: "ch1", p: "root", code: "4", tag: "book",
+  t: { it: "Cap. 1 — Valori e principi", en: "Ch. 1 — Values and principles" },
+  lead: { it: "I valori fondamentali della vita britannica e le responsabilità di chi diventa cittadino.", en: "The fundamental values of British life and the responsibilities of becoming a citizen." },
+  body: [ { p: {
+    it: "Il capitolo più breve del manuale, ma quello che dà il tono a tutto il resto: il Regno Unito si presenta come una <strong>democrazia moderna e diversa</strong> fondata su valori condivisi. Poche domande d'esame, ma facili da prendere.",
+    en: "The shortest chapter of the handbook, and the one that sets the tone for the rest: the UK presents itself as a <strong>modern, diverse democracy</strong> built on shared values. Few exam questions, but easy marks."
+  } } ],
+  links: []
+},
+{
+  id: "valori", p: "ch1", code: "4.1",
+  t: { it: "I valori fondamentali", en: "The fundamental values" },
+  lead: { it: "Democrazia, stato di diritto, libertà individuale, tolleranza, partecipazione.", en: "Democracy, the rule of law, individual liberty, tolerance, participation." },
+  body: [
+    { ul: [
+      { it: "<strong>Democracy</strong> — democrazia rappresentativa", en: "<strong>Democracy</strong> — representative government" },
+      { it: "<strong>The rule of law</strong> — la legge vale per tutti, governo compreso", en: "<strong>The rule of law</strong> — the law applies to everyone, government included" },
+      { it: "<strong>Individual liberty</strong> — libertà individuale", en: "<strong>Individual liberty</strong>" },
+      { it: "<strong>Tolerance</strong> di chi ha fedi e credenze diverse", en: "<strong>Tolerance</strong> of those with different faiths and beliefs" },
+      { it: "<strong>Participation</strong> nella vita della comunità", en: "<strong>Participation</strong> in community life" }
+    ] },
+    { p: {
+      it: "Questi cinque valori tornano identici nel <em>pledge</em> della cerimonia e nella retorica pubblica britannica (“British values”). Vale la pena impararli a memoria nell'ordine.",
+      en: "These five values reappear verbatim in the ceremony <em>pledge</em> and in British public rhetoric (“British values”). Worth memorising in order."
+    } }
+  ],
+  links: []
+},
+{
+  id: "diritti-doveri", p: "ch1", code: "4.2",
+  t: { it: "Diritti e doveri", en: "Rights and responsibilities" },
+  lead: { it: "Ciò che il Regno Unito ti garantisce e ciò che si aspetta da te.", en: "What the UK guarantees you and what it expects from you." },
+  body: [
+    { kv: [
+      { k: { it: "Diritti", en: "Rights" }, v: { it: "Libertà di parola e di espressione; libertà di fede e di culto; processo equo; nessuna discriminazione ingiusta; diritto di voto (per i cittadini)", en: "Freedom of speech and expression; freedom of belief and religion; a fair trial; freedom from unfair discrimination; the right to vote (for citizens)" } },
+      { k: { it: "Doveri", en: "Responsibilities" }, v: { it: "Rispettare e obbedire alla legge; rispettare i diritti altrui, comprese le loro opinioni; trattare tutti con equità; prendersi cura di sé e della famiglia; curare l'ambiente", en: "Respect and obey the law; respect the rights of others, including their opinions; treat everyone fairly; look after yourself and your family; look after the area you live in and the environment" } }
+    ] },
+    { p: {
+      it: "Il manuale insiste che diritti e doveri sono <strong>due facce della stessa moneta</strong>: chi chiede la cittadinanza accetta entrambi.",
+      en: "The handbook insists rights and responsibilities are <strong>two sides of one coin</strong>: applying for citizenship means accepting both."
+    } }
+  ],
+  links: []
+},
+{
+  id: "pledge", p: "ch1", code: "4.3",
+  t: { it: "Giuramento e promessa", en: "Oath and pledge" },
+  lead: { it: "Il testo che pronuncerai alla cerimonia: allegiance al Re, pledge al Regno Unito.", en: "The words you will say at the ceremony: allegiance to the King, a pledge to the UK." },
+  body: [
+    { p: {
+      it: "<strong>Oath</strong> (o <em>affirmation</em> per chi non giura su testi sacri): fedeltà a Sua Maestà il Re, ai suoi eredi e successori, secondo la legge.",
+      en: "<strong>Oath</strong> (or <em>affirmation</em> for those who do not swear on scripture): loyalty to His Majesty the King, his heirs and successors, according to law."
+    } },
+    { p: {
+      it: "<strong>Pledge</strong>: “Sarò leale al Regno Unito e ne rispetterò i diritti e le libertà. Ne difenderò i valori democratici. Osserverò fedelmente le sue leggi e adempirò ai miei doveri e obblighi di cittadino britannico.”",
+      en: "<strong>Pledge</strong>: “I will give my loyalty to the United Kingdom and respect its rights and freedoms. I will uphold its democratic values. I will observe its laws faithfully and fulfil my duties and obligations as a British citizen.”"
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/citizenship-ceremony", l: "GOV.UK — Citizenship ceremony" } ]
+},
+
+/* ============ 5. CAPITOLO 2 — COS'È IL REGNO UNITO ============ */
+{
+  id: "ch2", p: "root", code: "5", tag: "book",
+  t: { it: "Cap. 2 — Cos'è il Regno Unito", en: "Ch. 2 — What is the UK?" },
+  lead: { it: "Quattro nazioni, una bandiera, quattro santi patroni: la geografia politica di base.", en: "Four nations, one flag, four patron saints: the basic political geography." },
+  body: [ { p: {
+    it: "Capitolo corto ma pieno di trabocchetti terminologici: <em>UK</em>, <em>Great Britain</em>, <em>British Islands</em> e <em>British Isles</em> non sono sinonimi, e l'esame lo sa.",
+    en: "A short chapter full of terminology traps: <em>UK</em>, <em>Great Britain</em>, the <em>British Islands</em> and the <em>British Isles</em> are not synonyms, and the exam knows it."
+  } } ],
+  links: []
+},
+{
+  id: "nazioni", p: "ch2", code: "5.1",
+  t: { it: "Le quattro nazioni", en: "The four nations" },
+  lead: { it: "Regno Unito = Inghilterra + Scozia + Galles + Irlanda del Nord. Gran Bretagna = le prime tre.", en: "UK = England + Scotland + Wales + Northern Ireland. Great Britain = the first three." },
+  body: [
+    { kv: [
+      { k: { it: "United Kingdom", en: "United Kingdom" }, v: { it: "Inghilterra, Scozia, Galles, <strong>Irlanda del Nord</strong> — nome completo: <em>United Kingdom of Great Britain and Northern Ireland</em>", en: "England, Scotland, Wales, <strong>Northern Ireland</strong> — full name: <em>United Kingdom of Great Britain and Northern Ireland</em>" } },
+      { k: { it: "Great Britain", en: "Great Britain" }, v: { it: "Solo Inghilterra, Scozia e Galles (l'isola grande)", en: "England, Scotland and Wales only (the large island)" } },
+      { k: { it: "Crown dependencies", en: "Crown dependencies" }, v: { it: "Isole del Canale e Isola di Man: legate alla Corona ma <strong>non parte del Regno Unito</strong>", en: "The Channel Islands and the Isle of Man: linked to the Crown but <strong>not part of the UK</strong>" } },
+      { k: { it: "Overseas territories", en: "Overseas territories" }, v: { it: "St Helena, Falkland, Gibilterra…: legate al Regno Unito, non ne fanno parte", en: "St Helena, the Falklands, Gibraltar…: linked to the UK, not part of it" } }
+    ] },
+    { kv: [
+      { k: { it: "Capitali", en: "Capitals" }, v: { it: "Londra (Regno Unito e Inghilterra), Edimburgo (Scozia), Cardiff (Galles), Belfast (Irlanda del Nord)", en: "London (UK and England), Edinburgh (Scotland), Cardiff (Wales), Belfast (Northern Ireland)" } },
+      { k: { it: "Popolazione", en: "Population" }, v: { it: "Il manuale cita circa <strong>62 milioni</strong> (censimento 2010/2011); oggi la stima ONS supera i <strong>69 milioni</strong>. All'esame vale la cifra del libro", en: "The handbook cites about <strong>62 million</strong> (2010/2011 census); today's ONS estimate is over <strong>69 million</strong>. In the exam, the book's figure wins" } }
+    ] }
+  ],
+  links: [ { u: "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration", l: "ONS — dati di popolazione" } ]
+},
+{
+  id: "simboli", p: "ch2", code: "5.2",
+  t: { it: "Bandiere e santi patroni", en: "Flags and patron saints" },
+  lead: { it: "La Union Flag unisce tre croci — il Galles non c'è. Quattro santi, quattro date.", en: "The Union Flag combines three crosses — Wales is absent. Four saints, four dates." },
+  body: [
+    { kv: [
+      { k: { it: "St David", en: "St David" }, v: { it: "Galles — <strong>1 marzo</strong> — narciso e porro", en: "Wales — <strong>1 March</strong> — daffodil and leek" } },
+      { k: { it: "St Patrick", en: "St Patrick" }, v: { it: "Irlanda del Nord — <strong>17 marzo</strong> — trifoglio", en: "Northern Ireland — <strong>17 March</strong> — shamrock" } },
+      { k: { it: "St George", en: "St George" }, v: { it: "Inghilterra — <strong>23 aprile</strong> — rosa", en: "England — <strong>23 April</strong> — rose" } },
+      { k: { it: "St Andrew", en: "St Andrew" }, v: { it: "Scozia — <strong>30 novembre</strong> — cardo (thistle)", en: "Scotland — <strong>30 November</strong> — thistle" } }
+    ] },
+    { ul: [
+      { it: "La <strong>Union Flag</strong> (“Union Jack”) sovrappone la croce di San Giorgio (rossa su bianco), quella di Sant'Andrea (bianca diagonale su blu) e quella di San Patrizio (rossa diagonale su bianco).", en: "The <strong>Union Flag</strong> (“Union Jack”) combines the cross of St George (red on white), St Andrew (diagonal white on blue) and St Patrick (diagonal red on white)." },
+      { it: "Il <strong>Galles non è rappresentato</strong> nella Union Flag: era già unito all'Inghilterra quando la bandiera fu creata.", en: "<strong>Wales is not represented</strong> on the Union Flag: it was already united with England when the flag was created." },
+      { it: "Solo il 17 marzo e il 30 novembre sono giorni festivi ufficiali, e solo in Irlanda del Nord e in Scozia.", en: "Only 17 March and 30 November are official holidays, and only in Northern Ireland and Scotland." }
+    ] }
+  ],
+  links: [ { u: "https://www.royal.uk/union-jack", l: "royal.uk — The Union Flag" } ]
+},
+{
+  id: "lingue", p: "ch2", code: "5.3",
+  t: { it: "Lingue e moneta", en: "Languages and currency" },
+  lead: { it: "Inglese più gallese, gaelico e scots. Sterlina, con banconote diverse per nazione.", en: "English plus Welsh, Gaelic and Scots. The pound, with different banknotes by nation." },
+  body: [
+    { ul: [
+      { it: "<strong>Inglese</strong> è la lingua ufficiale di fatto; il <strong>gallese</strong> è ufficiale in Galles e insegnato a scuola.", en: "<strong>English</strong> is the de facto official language; <strong>Welsh</strong> is official in Wales and taught in schools." },
+      { it: "<strong>Gaelico scozzese</strong> nelle Highlands e nelle isole; <strong>Scots</strong> e <strong>Ulster Scots</strong>; <strong>irlandese</strong> in Irlanda del Nord.", en: "<strong>Scottish Gaelic</strong> in the Highlands and islands; <strong>Scots</strong> and <strong>Ulster Scots</strong>; <strong>Irish</strong> in Northern Ireland." },
+      { it: "Moneta: <strong>sterlina (£)</strong>, divisa in 100 penny. Banconote da £5, £10, £20, £50.", en: "Currency: the <strong>pound sterling (£)</strong>, divided into 100 pence. Notes of £5, £10, £20, £50." },
+      { it: "<strong>Scozia e Irlanda del Nord emettono banconote proprie</strong>, valide in tutto il Regno Unito ma non sempre accettate senza discussioni in Inghilterra.", en: "<strong>Scotland and Northern Ireland issue their own banknotes</strong>, valid across the UK though not always accepted without argument in England." }
+    ] }
+  ],
+  links: []
+},
+
+/* ============ 6. CAPITOLO 3 — STORIA ============ */
+{
+  id: "ch3", p: "root", code: "6", tag: "book",
+  t: { it: "Cap. 3 — Una lunga storia", en: "Ch. 3 — A long history" },
+  lead: { it: "Dalla preistoria a oggi. Il capitolo più lungo e la fonte della maggior parte delle domande.", en: "From prehistory to today. The longest chapter and the source of most exam questions." },
+  body: [ { p: {
+    it: "È il capitolo che decide l'esame. Studialo <strong>in ordine cronologico</strong> e ancora ogni fatto a una data: la banca dati domande è densa di anni precisi.",
+    en: "This is the chapter that decides the exam. Study it <strong>in chronological order</strong> and anchor every fact to a date: the question bank is dense with exact years."
+  } } ],
+  links: [ { u: "https://www.bbc.co.uk/history/british", l: "BBC History — British history" } ]
+},
+{
+  id: "antichita", p: "ch3", code: "6.1",
+  t: { it: "Preistoria e Romani", en: "Prehistory and the Romans" },
+  lead: { it: "Da Stonehenge all'invasione di Claudio, fino al ritiro delle legioni nel 410 d.C.", en: "From Stonehenge to Claudius's invasion, to the legions leaving in AD 410." },
+  body: [
+    { kv: [
+      { k: { it: "10.000 anni fa", en: "10,000 years ago" }, v: { it: "La Gran Bretagna è ancora unita al continente da un ponte di terra", en: "Britain is still joined to the continent by a land bridge" } },
+      { k: { it: "Età della pietra", en: "Stone Age" }, v: { it: "<strong>Stonehenge</strong> (Wiltshire) e <strong>Skara Brae</strong> (Orcadi), villaggio neolitico meglio conservato del Nord Europa", en: "<strong>Stonehenge</strong> (Wiltshire) and <strong>Skara Brae</strong> (Orkney), the best-preserved Neolithic village in northern Europe" } },
+      { k: { it: "Età del ferro", en: "Iron Age" }, v: { it: "I Celti; le prime monete coniate in Britannia; le fortezze collinari (<em>hill forts</em>) come Maiden Castle", en: "The Celts; the first coins minted in Britain; hill forts such as Maiden Castle" } },
+      { k: { it: "55 a.C.", en: "55 BC" }, v: { it: "<strong>Giulio Cesare</strong> invade senza successo", en: "<strong>Julius Caesar</strong> invades unsuccessfully" } },
+      { k: { it: "43 d.C.", en: "AD 43" }, v: { it: "L'imperatore <strong>Claudio</strong> conquista la Britannia, salvo la Scozia", en: "Emperor <strong>Claudius</strong> conquers Britain, except Scotland" } },
+      { k: { it: "60/61 d.C.", en: "AD 60/61" }, v: { it: "Rivolta di <strong>Boudicca</strong>, regina degli Iceni: la sua statua è sul Westminster Bridge", en: "The revolt of <strong>Boudicca</strong>, queen of the Iceni: her statue stands on Westminster Bridge" } },
+      { k: { it: "122 d.C.", en: "AD 122" }, v: { it: "<strong>Vallo di Adriano</strong>, per tenere fuori i Pitti; oggi patrimonio UNESCO", en: "<strong>Hadrian's Wall</strong>, built to keep out the Picts; now a UNESCO site" } },
+      { k: { it: "410 d.C.", en: "AD 410" }, v: { it: "I Romani lasciano la Britannia per difendere l'Impero altrove", en: "The Romans leave Britain to defend the Empire elsewhere" } }
+    ] }
+  ],
+  links: [ { u: "https://www.english-heritage.org.uk/learn/story-of-england/", l: "English Heritage — Story of England" } ]
+},
+{
+  id: "medioevo", p: "ch3", code: "6.2",
+  t: { it: "Anglosassoni, Vichinghi, Normanni", en: "Anglo-Saxons, Vikings, Normans" },
+  lead: { it: "1066: l'ultima invasione riuscita dell'Inghilterra. Poi Magna Carta e Peste Nera.", en: "1066: the last successful invasion of England. Then Magna Carta and the Black Death." },
+  body: [
+    { kv: [
+      { k: { it: "V-VI secolo", en: "5th–6th c." }, v: { it: "Angli, Sassoni e Juti dal nord Europa; il cristianesimo si diffonde (Sant'Agostino, San Colombano)", en: "Angles, Saxons and Jutes from northern Europe; Christianity spreads (St Augustine, St Columba)" } },
+      { k: { it: "Sutton Hoo", en: "Sutton Hoo" }, v: { it: "Sepoltura navale anglosassone nel Suffolk, con tesoro e elmo", en: "Anglo-Saxon ship burial in Suffolk, with treasure and helmet" } },
+      { k: { it: "789", en: "AD 789" }, v: { it: "Prime incursioni <strong>vichinghe</strong> dalla Danimarca e Norvegia", en: "First <strong>Viking</strong> raids from Denmark and Norway" } },
+      { k: { it: "IX secolo", en: "9th c." }, v: { it: "<strong>Kenneth MacAlpin</strong> unifica i regni scozzesi", en: "<strong>Kenneth MacAlpin</strong> unites the Scottish kingdoms" } },
+      { k: { it: "1066", en: "1066" }, v: { it: "<strong>Battaglia di Hastings</strong>: <strong>Guglielmo il Conquistatore</strong>, duca di Normandia, sconfigge re Harold. L'<strong>Arazzo di Bayeux</strong> la racconta", en: "<strong>Battle of Hastings</strong>: <strong>William the Conqueror</strong>, Duke of Normandy, defeats King Harold. The <strong>Bayeux Tapestry</strong> tells the story" } },
+      { k: { it: "1086", en: "1086" }, v: { it: "<strong>Domesday Book</strong>: il censimento delle terre inglesi", en: "<strong>Domesday Book</strong>: the survey of English land" } },
+      { k: { it: "1215", en: "1215" }, v: { it: "<strong>Magna Carta</strong>: re Giovanni accetta limiti al potere reale — pietra angolare delle libertà britanniche", en: "<strong>Magna Carta</strong>: King John accepts limits on royal power — the cornerstone of British liberties" } },
+      { k: { it: "1284", en: "1284" }, v: { it: "<strong>Statute of Rhuddlan</strong>: il Galles annesso alla corona inglese (unione formale col 1536)", en: "<strong>Statute of Rhuddlan</strong>: Wales annexed to the English crown (formal union in 1536)" } },
+      { k: { it: "1314", en: "1314" }, v: { it: "<strong>Bannockburn</strong>: <strong>Robert the Bruce</strong> sconfigge gli inglesi e la Scozia resta indipendente", en: "<strong>Bannockburn</strong>: <strong>Robert the Bruce</strong> defeats the English and Scotland stays independent" } },
+      { k: { it: "1337-1453", en: "1337–1453" }, v: { it: "<strong>Guerra dei Cent'anni</strong> con la Francia; <strong>Agincourt 1415</strong>, vittoria di Enrico V", en: "<strong>Hundred Years War</strong> with France; <strong>Agincourt 1415</strong>, Henry V's victory" } },
+      { k: { it: "1348", en: "1348" }, v: { it: "<strong>Peste Nera</strong>: muore forse un terzo della popolazione", en: "<strong>Black Death</strong>: perhaps a third of the population dies" } },
+      { k: { it: "1455-1485", en: "1455–1485" }, v: { it: "<strong>Guerra delle Due Rose</strong>: York (rosa bianca) contro Lancaster (rosa rossa). Finisce a <strong>Bosworth Field, 1485</strong>: Enrico Tudor diventa <strong>Enrico VII</strong>", en: "<strong>Wars of the Roses</strong>: York (white rose) against Lancaster (red rose). Ends at <strong>Bosworth Field, 1485</strong>: Henry Tudor becomes <strong>Henry VII</strong>" } }
+    ] }
+  ],
+  links: [ { u: "https://www.bl.uk/magna-carta", l: "British Library — Magna Carta" } ]
+},
+{
+  id: "tudor", p: "ch3", code: "6.3",
+  t: { it: "Tudor e Stuart", en: "Tudors and Stuarts" },
+  lead: { it: "La Riforma, le sei mogli di Enrico VIII, Elisabetta I, l'Armada e l'unione delle corone.", en: "The Reformation, Henry VIII's six wives, Elizabeth I, the Armada and the union of the crowns." },
+  body: [
+    { kv: [
+      { k: { it: "Enrico VIII", en: "Henry VIII" }, v: { it: "Rompe con Roma e fonda la <strong>Church of England</strong> (1534). <strong>Sei mogli</strong>: Caterina d'Aragona, Anna Bolena, Jane Seymour, Anna di Cleves, Caterina Howard, Caterina Parr — “divorced, beheaded, died; divorced, beheaded, survived”", en: "Breaks with Rome and founds the <strong>Church of England</strong> (1534). <strong>Six wives</strong>: Catherine of Aragon, Anne Boleyn, Jane Seymour, Anne of Cleves, Catherine Howard, Catherine Parr — “divorced, beheaded, died; divorced, beheaded, survived”" } },
+      { k: { it: "Edoardo VI", en: "Edward VI" }, v: { it: "Protestante; introduce il <strong>Book of Common Prayer</strong>", en: "Protestant; introduces the <strong>Book of Common Prayer</strong>" } },
+      { k: { it: "Maria I", en: "Mary I" }, v: { it: "Cattolica, perseguita i protestanti (“Bloody Mary”)", en: "Catholic, persecutes Protestants (“Bloody Mary”)" } },
+      { k: { it: "Elisabetta I", en: "Elizabeth I" }, v: { it: "Protestante; regno lungo e prospero; <strong>1588: sconfitta dell'Armada spagnola</strong>", en: "Protestant; a long and prosperous reign; <strong>1588: defeat of the Spanish Armada</strong>" } },
+      { k: { it: "Maria Stuarda", en: "Mary, Queen of Scots" }, v: { it: "Cattolica, fugge in Inghilterra, imprigionata e <strong>giustiziata nel 1587</strong>", en: "Catholic, flees to England, imprisoned and <strong>executed in 1587</strong>" } },
+      { k: { it: "1603", en: "1603" }, v: { it: "<strong>Unione delle corone</strong>: Giacomo VI di Scozia diventa <strong>Giacomo I</strong> d'Inghilterra", en: "<strong>Union of the Crowns</strong>: James VI of Scotland becomes <strong>James I</strong> of England" } },
+      { k: { it: "1605", en: "1605" }, v: { it: "<strong>Gunpowder Plot</strong>: Guy Fawkes tenta di far saltare il Parlamento — si ricorda il <strong>5 novembre</strong>", en: "<strong>Gunpowder Plot</strong>: Guy Fawkes tries to blow up Parliament — remembered on <strong>5 November</strong>" } },
+      { k: { it: "1611", en: "1611" }, v: { it: "<strong>King James Bible</strong>, versione autorizzata in inglese", en: "<strong>King James Bible</strong>, the authorised English version" } },
+      { k: { it: "Shakespeare", en: "Shakespeare" }, v: { it: "1564-1616, di Stratford-upon-Avon: teatro e poesia dell'età elisabettiana", en: "1564–1616, of Stratford-upon-Avon: the drama and poetry of the Elizabethan age" } }
+    ] }
+  ],
+  links: [ { u: "https://www.royal.uk/tudors", l: "royal.uk — The Tudors" } ]
+},
+{
+  id: "guerra-civile", p: "ch3", code: "6.4",
+  t: { it: "Guerra civile e Rivoluzione", en: "Civil War and Revolution" },
+  lead: { it: "Un re decapitato, una repubblica, una restaurazione e la monarchia costituzionale.", en: "A beheaded king, a republic, a restoration and constitutional monarchy." },
+  body: [
+    { kv: [
+      { k: { it: "1642", en: "1642" }, v: { it: "Scoppia la <strong>guerra civile</strong>: <em>Cavaliers</em> (realisti) contro <em>Roundheads</em> (parlamentari)", en: "<strong>Civil War</strong> breaks out: <em>Cavaliers</em> (Royalists) against <em>Roundheads</em> (Parliamentarians)" } },
+      { k: { it: "1649", en: "1649" }, v: { it: "<strong>Carlo I giustiziato</strong>; l'Inghilterra diventa una repubblica, il <em>Commonwealth</em>", en: "<strong>Charles I executed</strong>; England becomes a republic, the <em>Commonwealth</em>" } },
+      { k: { it: "Oliver Cromwell", en: "Oliver Cromwell" }, v: { it: "<strong>Lord Protector</strong>; campagna brutale in Irlanda", en: "<strong>Lord Protector</strong>; a brutal campaign in Ireland" } },
+      { k: { it: "1660", en: "1660" }, v: { it: "<strong>Restaurazione</strong>: Carlo II torna sul trono", en: "<strong>Restoration</strong>: Charles II returns to the throne" } },
+      { k: { it: "1660", en: "1660" }, v: { it: "Fondazione della <strong>Royal Society</strong>, la più antica società scientifica sopravvissuta", en: "The <strong>Royal Society</strong> is founded, the oldest surviving scientific society" } },
+      { k: { it: "1665 / 1666", en: "1665 / 1666" }, v: { it: "<strong>Grande Peste</strong> e <strong>Grande Incendio di Londra</strong>; ricostruzione di St Paul's da parte di Christopher Wren", en: "The <strong>Great Plague</strong> and the <strong>Great Fire of London</strong>; St Paul's rebuilt by Christopher Wren" } },
+      { k: { it: "1679", en: "1679" }, v: { it: "<strong>Habeas Corpus Act</strong>: nessuna detenzione arbitraria", en: "<strong>Habeas Corpus Act</strong>: no arbitrary detention" } },
+      { k: { it: "1688", en: "1688" }, v: { it: "<strong>Glorious Revolution</strong>: Guglielmo d'Orange e Maria succedono a Giacomo II senza spargimento di sangue in Inghilterra", en: "<strong>Glorious Revolution</strong>: William of Orange and Mary replace James II with no bloodshed in England" } },
+      { k: { it: "1689", en: "1689" }, v: { it: "<strong>Bill of Rights</strong>: il Parlamento deve essere convocato regolarmente e approvare le tasse — nasce la <strong>monarchia costituzionale</strong>", en: "<strong>Bill of Rights</strong>: Parliament must meet regularly and consent to taxes — <strong>constitutional monarchy</strong> begins" } },
+      { k: { it: "1707", en: "1707" }, v: { it: "<strong>Act of Union</strong>: nasce il <strong>Regno di Gran Bretagna</strong>", en: "<strong>Act of Union</strong>: the <strong>Kingdom of Great Britain</strong> is created" } },
+      { k: { it: "1721", en: "1721" }, v: { it: "<strong>Sir Robert Walpole</strong>, considerato il <strong>primo Primo Ministro</strong>", en: "<strong>Sir Robert Walpole</strong>, regarded as the <strong>first Prime Minister</strong>" } },
+      { k: { it: "1745-46", en: "1745–46" }, v: { it: "Rivolta giacobita di <strong>Bonnie Prince Charlie</strong>, sconfitta a <strong>Culloden</strong>; seguono le <em>Highland Clearances</em>", en: "The Jacobite rising of <strong>Bonnie Prince Charlie</strong>, crushed at <strong>Culloden</strong>; the <em>Highland Clearances</em> follow" } }
+    ] }
+  ],
+  links: [ { u: "https://www.parliament.uk/about/living-heritage/", l: "UK Parliament — Living Heritage" } ]
+},
+{
+  id: "impero", p: "ch3", code: "6.5",
+  t: { it: "Impero e Rivoluzione industriale", en: "Empire and Industrial Revolution" },
+  lead: { it: "Vapore, ferro e cotone; l'abolizione della schiavitù; l'età vittoriana e l'impero più vasto del mondo.", en: "Steam, iron and cotton; the abolition of slavery; the Victorian age and the largest empire in the world." },
+  body: [
+    { kv: [
+      { k: { it: "1801", en: "1801" }, v: { it: "<strong>Act of Union</strong> con l'Irlanda: nasce il <em>United Kingdom of Great Britain and Ireland</em>", en: "<strong>Act of Union</strong> with Ireland: the <em>United Kingdom of Great Britain and Ireland</em> is born" } },
+      { k: { it: "1805", en: "1805" }, v: { it: "<strong>Trafalgar</strong>: l'ammiraglio <strong>Nelson</strong> sconfigge la flotta franco-spagnola e muore in battaglia", en: "<strong>Trafalgar</strong>: Admiral <strong>Nelson</strong> defeats the French and Spanish fleets and dies in the battle" } },
+      { k: { it: "1815", en: "1815" }, v: { it: "<strong>Waterloo</strong>: il <strong>Duca di Wellington</strong> sconfigge Napoleone", en: "<strong>Waterloo</strong>: the <strong>Duke of Wellington</strong> defeats Napoleon" } },
+      { k: { it: "1807 / 1833", en: "1807 / 1833" }, v: { it: "Abolizione della <strong>tratta degli schiavi</strong> e poi della <strong>schiavitù</strong> nell'Impero; <strong>William Wilberforce</strong> guida la campagna", en: "Abolition of the <strong>slave trade</strong> and then of <strong>slavery</strong> across the Empire; <strong>William Wilberforce</strong> leads the campaign" } },
+      { k: { it: "Rivoluzione industriale", en: "Industrial Revolution" }, v: { it: "<strong>Richard Arkwright</strong> (filatura), <strong>James Watt</strong> (macchina a vapore), <strong>Isambard Kingdom Brunel</strong> (ferrovie, ponti, navi), <strong>George Stephenson</strong>", en: "<strong>Richard Arkwright</strong> (spinning), <strong>James Watt</strong> (steam engine), <strong>Isambard Kingdom Brunel</strong> (railways, bridges, ships), <strong>George Stephenson</strong>" } },
+      { k: { it: "1837-1901", en: "1837–1901" }, v: { it: "<strong>Età vittoriana</strong>: l'Impero britannico copre un quarto del pianeta", en: "<strong>The Victorian age</strong>: the British Empire covers a quarter of the globe" } },
+      { k: { it: "1853-56", en: "1853–56" }, v: { it: "<strong>Guerra di Crimea</strong>; <strong>Florence Nightingale</strong> fonda l'infermieristica moderna", en: "<strong>Crimean War</strong>; <strong>Florence Nightingale</strong> founds modern nursing" } },
+      { k: { it: "1851", en: "1851" }, v: { it: "<strong>Great Exhibition</strong> al Crystal Palace, vetrina dell'industria britannica", en: "<strong>The Great Exhibition</strong> at the Crystal Palace, a showcase of British industry" } }
+    ] }
+  ],
+  links: [ { u: "https://www.bbc.co.uk/history/british/victorians/", l: "BBC — The Victorians" } ]
+},
+{
+  id: "novecento", p: "ch3", code: "6.6",
+  t: { it: "Il Novecento", en: "The twentieth century" },
+  lead: { it: "Due guerre mondiali, il voto alle donne, la divisione dell'Irlanda, Churchill.", en: "Two world wars, votes for women, the partition of Ireland, Churchill." },
+  body: [
+    { kv: [
+      { k: { it: "1913-1928", en: "1913–1928" }, v: { it: "<strong>Suffragette</strong> guidate da <strong>Emmeline Pankhurst</strong>; nel <strong>1918</strong> voto alle donne sopra i 30 anni con requisiti di proprietà; nel <strong>1928</strong> parità a 21 anni", en: "<strong>Suffragettes</strong> led by <strong>Emmeline Pankhurst</strong>; in <strong>1918</strong> women over 30 with property win the vote; in <strong>1928</strong> equal voting at 21" } },
+      { k: { it: "1914-1918", en: "1914–1918" }, v: { it: "<strong>Prima guerra mondiale</strong>; <strong>Somme 1916</strong>: 60.000 vittime britanniche nel solo primo giorno", en: "<strong>First World War</strong>; the <strong>Somme, 1916</strong>: 60,000 British casualties on the first day alone" } },
+      { k: { it: "1922", en: "1922" }, v: { it: "Nasce l'<strong>Irish Free State</strong>; l'<strong>Irlanda del Nord</strong> resta nel Regno Unito, che prende il nome attuale", en: "The <strong>Irish Free State</strong> is created; <strong>Northern Ireland</strong> stays in the UK, which takes its present name" } },
+      { k: { it: "1929", en: "1929" }, v: { it: "<strong>Grande Depressione</strong>: disoccupazione di massa", en: "<strong>The Great Depression</strong>: mass unemployment" } },
+      { k: { it: "1939-1945", en: "1939–1945" }, v: { it: "<strong>Seconda guerra mondiale</strong>; <strong>Winston Churchill</strong> primo ministro dal 1940", en: "<strong>Second World War</strong>; <strong>Winston Churchill</strong> Prime Minister from 1940" } },
+      { k: { it: "1940", en: "1940" }, v: { it: "<strong>Dunkirk</strong>, l'evacuazione via mare; <strong>Battle of Britain</strong>, vinta dalla RAF — “Never was so much owed by so many to so few”", en: "<strong>Dunkirk</strong>, the seaborne evacuation; the <strong>Battle of Britain</strong>, won by the RAF — “Never was so much owed by so many to so few”" } },
+      { k: { it: "6 giugno 1944", en: "6 June 1944" }, v: { it: "<strong>D-Day</strong>: gli Alleati sbarcano in Normandia", en: "<strong>D-Day</strong>: the Allies land in Normandy" } },
+      { k: { it: "8 maggio 1945", en: "8 May 1945" }, v: { it: "<strong>VE Day</strong>, vittoria in Europa", en: "<strong>VE Day</strong>, victory in Europe" } },
+      { k: { it: "Bletchley Park", en: "Bletchley Park" }, v: { it: "<strong>Alan Turing</strong> e i decrittatori del codice Enigma", en: "<strong>Alan Turing</strong> and the Enigma codebreakers" } }
+    ] }
+  ],
+  links: [ { u: "https://www.iwm.org.uk/history", l: "Imperial War Museums — History" } ]
+},
+{
+  id: "dopoguerra", p: "ch3", code: "6.7",
+  t: { it: "Dal dopoguerra a oggi", en: "Post-war to today" },
+  lead: { it: "NHS, welfare, immigrazione, Thatcher, devolution, Brexit, Carlo III.", en: "The NHS, the welfare state, immigration, Thatcher, devolution, Brexit, Charles III." },
+  body: [
+    { kv: [
+      { k: { it: "1942 / 1948", en: "1942 / 1948" }, v: { it: "<strong>Rapporto Beveridge</strong> e nascita del <strong>National Health Service</strong> per opera di <strong>Aneurin Bevan</strong>: cure gratuite al punto di erogazione", en: "The <strong>Beveridge Report</strong> and the founding of the <strong>National Health Service</strong> by <strong>Aneurin Bevan</strong>: care free at the point of use" } },
+      { k: { it: "1948", en: "1948" }, v: { it: "Arriva la <strong>Empire Windrush</strong>: immigrazione dai Caraibi e poi dal subcontinente indiano", en: "The <strong>Empire Windrush</strong> arrives: immigration from the Caribbean and later the Indian subcontinent" } },
+      { k: { it: "1949 / 1973", en: "1949 / 1973" }, v: { it: "Il Regno Unito è membro fondatore della <strong>NATO</strong>; entra nella <strong>CEE</strong> nel 1973", en: "The UK is a founding member of <strong>NATO</strong>; joins the <strong>EEC</strong> in 1973" } },
+      { k: { it: "1979", en: "1979" }, v: { it: "<strong>Margaret Thatcher</strong>, prima donna Primo Ministro, in carica fino al 1990", en: "<strong>Margaret Thatcher</strong>, the first woman Prime Minister, in office until 1990" } },
+      { k: { it: "1998-1999", en: "1998–1999" }, v: { it: "<strong>Good Friday Agreement</strong> in Irlanda del Nord e <strong>devolution</strong>: nascono Parlamento scozzese, Assemblea gallese e Assemblea nordirlandese", en: "The <strong>Good Friday Agreement</strong> in Northern Ireland and <strong>devolution</strong>: the Scottish Parliament, Welsh Assembly and Northern Ireland Assembly are created" } },
+      { k: { it: "2012", en: "2012" }, v: { it: "<strong>Olimpiadi e Paralimpiadi di Londra</strong>", en: "The <strong>London Olympic and Paralympic Games</strong>" } }
+    ] },
+    { warn: {
+      it: "<strong>Dopo il manuale.</strong> Questi fatti sono posteriori al libro del 2013 e non sono materia d'esame, ma servono a capire il paese: referendum scozzese <strong>2014</strong>; referendum UE <strong>2016</strong> e uscita dall'Unione il <strong>31 gennaio 2020</strong>; pandemia di Covid-19; morte di <strong>Elisabetta II</strong> nel settembre <strong>2022</strong> e incoronazione di <strong>Carlo III</strong> il 6 maggio 2023.",
+      en: "<strong>After the handbook.</strong> These events postdate the 2013 book and are not examinable, but they explain the country: the Scottish referendum of <strong>2014</strong>; the EU referendum of <strong>2016</strong> and leaving the Union on <strong>31 January 2020</strong>; the Covid-19 pandemic; the death of <strong>Elizabeth II</strong> in September <strong>2022</strong> and the coronation of <strong>Charles III</strong> on 6 May 2023."
+    } }
+  ],
+  links: [ { u: "https://www.nhs.uk/nhs-services/", l: "NHS — servizi sanitari" } ]
+}
+,
+/* ============ 7. CAPITOLO 4 — SOCIETÀ MODERNA ============ */
+{
+  id: "ch4", p: "root", code: "7", tag: "book",
+  t: { it: "Cap. 4 — Società moderna", en: "Ch. 4 — Modern society" },
+  lead: { it: "Religioni, feste, sport, arti, tempo libero: il capitolo degli elenchi di nomi.", en: "Religion, festivals, sport, the arts, leisure: the chapter of name lists." },
+  body: [ { p: {
+    it: "Meno date, molti <strong>nomi propri</strong>. Qui si perdono punti per distrazione: chi ha scritto cosa, chi ha vinto cosa, dove si tiene cosa. Conviene ripassarlo per liste.",
+    en: "Fewer dates, many <strong>proper names</strong>. This is where marks get lost to carelessness: who wrote what, who won what, where things are held. Revise it as lists."
+  } } ],
+  links: []
+},
+{
+  id: "religione", p: "ch4", code: "7.1",
+  t: { it: "Religione", en: "Religion" },
+  lead: { it: "Chiesa d'Inghilterra di stato, ma libertà di culto piena e una società largamente laica.", en: "An established Church of England, but full freedom of worship and a largely secular society." },
+  body: [
+    { ul: [
+      { it: "Il censimento citato dal manuale (2011): circa <strong>59% cristiani</strong>, <strong>25% nessuna religione</strong>, musulmani 4,8%, indù 1,5%, poi sikh, ebrei e buddisti.", en: "The census cited in the handbook (2011): about <strong>59% Christian</strong>, <strong>25% no religion</strong>, Muslim 4.8%, Hindu 1.5%, then Sikh, Jewish and Buddhist." },
+      { it: "La <strong>Church of England</strong> (anglicana) è la chiesa di stato in Inghilterra; il <strong>sovrano ne è il Supreme Governor</strong> e l'<strong>Arcivescovo di Canterbury</strong> ne è la guida spirituale.", en: "The <strong>Church of England</strong> (Anglican) is the established church in England; the <strong>monarch is its Supreme Governor</strong> and the <strong>Archbishop of Canterbury</strong> its spiritual leader." },
+      { it: "In Scozia la chiesa nazionale è la <strong>Church of Scotland</strong>, presbiteriana, guidata da un <strong>Moderator</strong> eletto ogni anno.", en: "In Scotland the national church is the <strong>Church of Scotland</strong>, Presbyterian, led by a <strong>Moderator</strong> elected annually." },
+      { it: "<strong>Non c'è chiesa di stato</strong> in Galles e Irlanda del Nord.", en: "There is <strong>no established church</strong> in Wales or Northern Ireland." },
+      { it: "La libertà di praticare qualunque religione — o nessuna — è un principio fondamentale.", en: "Freedom to practise any religion — or none — is a fundamental principle." }
+    ] }
+  ],
+  links: [ { u: "https://www.churchofengland.org/", l: "Church of England" } ]
+},
+{
+  id: "feste", p: "ch4", code: "7.2",
+  t: { it: "Feste e tradizioni", en: "Festivals and traditions" },
+  lead: { it: "Natale, Pasqua, Bonfire Night, Remembrance Day, Hogmanay e le feste delle altre comunità.", en: "Christmas, Easter, Bonfire Night, Remembrance Day, Hogmanay and other communities' festivals." },
+  body: [
+    { kv: [
+      { k: { it: "25 dicembre", en: "25 December" }, v: { it: "<strong>Christmas Day</strong>: pranzo con tacchino, <em>Christmas pudding</em>, messaggio del Re", en: "<strong>Christmas Day</strong>: turkey lunch, Christmas pudding, the King's message" } },
+      { k: { it: "26 dicembre", en: "26 December" }, v: { it: "<strong>Boxing Day</strong>, giorno festivo", en: "<strong>Boxing Day</strong>, a public holiday" } },
+      { k: { it: "31 dicembre", en: "31 December" }, v: { it: "<strong>New Year's Eve</strong>; in Scozia <strong>Hogmanay</strong>, festa grande con il 2 gennaio festivo", en: "<strong>New Year's Eve</strong>; in Scotland <strong>Hogmanay</strong>, a major festival, with 2 January also a holiday" } },
+      { k: { it: "Marzo/Aprile", en: "March/April" }, v: { it: "<strong>Pasqua</strong>: Good Friday e Easter Monday sono festivi; prima la Quaresima e <em>Shrove Tuesday</em> (pancake day)", en: "<strong>Easter</strong>: Good Friday and Easter Monday are holidays; before it, Lent and <em>Shrove Tuesday</em> (pancake day)" } },
+      { k: { it: "5 novembre", en: "5 November" }, v: { it: "<strong>Bonfire Night</strong>: falò e fuochi d'artificio per il fallito complotto di Guy Fawkes del 1605", en: "<strong>Bonfire Night</strong>: bonfires and fireworks for Guy Fawkes's failed 1605 plot" } },
+      { k: { it: "11 novembre", en: "11 November" }, v: { it: "<strong>Remembrance Day</strong>: papaveri rossi e due minuti di silenzio alle 11", en: "<strong>Remembrance Day</strong>: red poppies and two minutes' silence at 11am" } },
+      { k: { it: "31 ottobre", en: "31 October" }, v: { it: "<strong>Hallowe'en</strong>, di origine antica e pre-cristiana", en: "<strong>Hallowe'en</strong>, of ancient pre-Christian origin" } },
+      { k: { it: "Altre comunità", en: "Other communities" }, v: { it: "<strong>Diwali</strong> (indù e sikh), <strong>Eid al-Fitr</strong> e <strong>Eid al-Adha</strong> (musulmani), <strong>Vaisakhi</strong> (sikh), <strong>Hanukkah</strong> e <strong>Yom Kippur</strong> (ebrei)", en: "<strong>Diwali</strong> (Hindu and Sikh), <strong>Eid al-Fitr</strong> and <strong>Eid al-Adha</strong> (Muslim), <strong>Vaisakhi</strong> (Sikh), <strong>Hanukkah</strong> and <strong>Yom Kippur</strong> (Jewish)" } },
+      { k: { it: "Bank holidays", en: "Bank holidays" }, v: { it: "Giorni festivi in cui banche e molte attività chiudono; le date variano fra le quattro nazioni", en: "Public holidays when banks and many businesses close; dates vary across the four nations" } }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/bank-holidays", l: "GOV.UK — Bank holidays" } ]
+},
+{
+  id: "sport", p: "ch4", code: "7.3",
+  t: { it: "Sport", en: "Sport" },
+  lead: { it: "Calcio, cricket, rugby, tennis e i nomi che l'esame chiede.", en: "Football, cricket, rugby, tennis and the names the exam asks about." },
+  body: [
+    { kv: [
+      { k: { it: "Calcio", en: "Football" }, v: { it: "Nato in Inghilterra nel Medioevo; <strong>Premier League</strong>; le quattro nazioni hanno squadre nazionali separate", en: "Grew from medieval England; the <strong>Premier League</strong>; the four nations have separate national teams" } },
+      { k: { it: "Cricket", en: "Cricket" }, v: { it: "<strong>The Ashes</strong>: la serie storica contro l'Australia; <strong>Lord's</strong> è il campo simbolo", en: "<strong>The Ashes</strong>: the historic series against Australia; <strong>Lord's</strong> is the emblematic ground" } },
+      { k: { it: "Rugby", en: "Rugby" }, v: { it: "<strong>Six Nations</strong>: Inghilterra, Scozia, Galles, Irlanda, Francia, Italia", en: "<strong>Six Nations</strong>: England, Scotland, Wales, Ireland, France, Italy" } },
+      { k: { it: "Tennis", en: "Tennis" }, v: { it: "<strong>Wimbledon</strong>, il più antico torneo del mondo, dal 1877", en: "<strong>Wimbledon</strong>, the world's oldest tournament, since 1877" } },
+      { k: { it: "Golf", en: "Golf" }, v: { it: "Nato in Scozia; <strong>St Andrews</strong> è la sua casa storica", en: "Born in Scotland; <strong>St Andrews</strong> is its historic home" } },
+      { k: { it: "Ippica", en: "Horse racing" }, v: { it: "<strong>Grand National</strong> ad Aintree, <strong>Royal Ascot</strong>, il Derby a Epsom", en: "The <strong>Grand National</strong> at Aintree, <strong>Royal Ascot</strong>, the Derby at Epsom" } },
+      { k: { it: "Nomi", en: "Names" }, v: { it: "<strong>Sir Roger Bannister</strong> (miglio sotto i 4 minuti, 1954), <strong>Sir Steve Redgrave</strong> (5 ori olimpici nel canottaggio), <strong>Baroness Tanni Grey-Thompson</strong> (paralimpiadi), <strong>Sir Bradley Wiggins</strong>, <strong>Mo Farah</strong>, <strong>Jessica Ennis</strong>, <strong>Sir Andy Murray</strong>", en: "<strong>Sir Roger Bannister</strong> (sub-four-minute mile, 1954), <strong>Sir Steve Redgrave</strong> (five Olympic rowing golds), <strong>Baroness Tanni Grey-Thompson</strong> (Paralympics), <strong>Sir Bradley Wiggins</strong>, <strong>Mo Farah</strong>, <strong>Jessica Ennis</strong>, <strong>Sir Andy Murray</strong>" } }
+    ] }
+  ],
+  links: []
+},
+{
+  id: "arti", p: "ch4", code: "7.4",
+  t: { it: "Letteratura e arti", en: "Literature and the arts" },
+  lead: { it: "Shakespeare, i poeti, i romanzieri, i pittori e i premi che li consacrano.", en: "Shakespeare, the poets, the novelists, the painters and the prizes that crown them." },
+  body: [
+    { kv: [
+      { k: { it: "Teatro", en: "Theatre" }, v: { it: "<strong>William Shakespeare</strong> (Romeo e Giulietta, Amleto, Macbeth); <strong>Globe Theatre</strong>; il <strong>West End</strong> londinese; <strong>Gilbert e Sullivan</strong>; <strong>Andrew Lloyd Webber</strong>; <strong>Edinburgh Festival Fringe</strong>", en: "<strong>William Shakespeare</strong> (Romeo and Juliet, Hamlet, Macbeth); the <strong>Globe Theatre</strong>; London's <strong>West End</strong>; <strong>Gilbert and Sullivan</strong>; <strong>Andrew Lloyd Webber</strong>; the <strong>Edinburgh Festival Fringe</strong>" } },
+      { k: { it: "Poesia", en: "Poetry" }, v: { it: "<strong>Robert Burns</strong> (scozzese, <em>Auld Lang Syne</em>, celebrato con la <em>Burns Night</em> il 25 gennaio), <strong>William Wordsworth</strong>, <strong>Lord Byron</strong>, <strong>Dylan Thomas</strong>; <strong>Poets' Corner</strong> a Westminster Abbey", en: "<strong>Robert Burns</strong> (Scottish, <em>Auld Lang Syne</em>, celebrated on <em>Burns Night</em>, 25 January), <strong>William Wordsworth</strong>, <strong>Lord Byron</strong>, <strong>Dylan Thomas</strong>; <strong>Poets' Corner</strong> in Westminster Abbey" } },
+      { k: { it: "Romanzo", en: "The novel" }, v: { it: "<strong>Jane Austen</strong>, <strong>Charles Dickens</strong>, <strong>Thomas Hardy</strong>, <strong>Robert Louis Stevenson</strong>, <strong>Graham Greene</strong>, <strong>J.K. Rowling</strong>; il <strong>Man Booker Prize</strong> premia il miglior romanzo dell'anno", en: "<strong>Jane Austen</strong>, <strong>Charles Dickens</strong>, <strong>Thomas Hardy</strong>, <strong>Robert Louis Stevenson</strong>, <strong>Graham Greene</strong>, <strong>J.K. Rowling</strong>; the <strong>Man Booker Prize</strong> honours the best novel of the year" } },
+      { k: { it: "Pittura", en: "Painting" }, v: { it: "<strong>Thomas Gainsborough</strong>, <strong>John Constable</strong>, <strong>J.M.W. Turner</strong>, i <strong>Preraffaelliti</strong>, <strong>Henry Moore</strong> (scultura), <strong>David Hockney</strong>, <strong>Lucian Freud</strong>; il <strong>Turner Prize</strong> per l'arte contemporanea", en: "<strong>Thomas Gainsborough</strong>, <strong>John Constable</strong>, <strong>J.M.W. Turner</strong>, the <strong>Pre-Raphaelites</strong>, <strong>Henry Moore</strong> (sculpture), <strong>David Hockney</strong>, <strong>Lucian Freud</strong>; the <strong>Turner Prize</strong> for contemporary art" } },
+      { k: { it: "Architettura", en: "Architecture" }, v: { it: "<strong>Sir Christopher Wren</strong> (St Paul's), <strong>Inigo Jones</strong>, <strong>Robert Adam</strong>, <strong>Sir Norman Foster</strong>, <strong>Zaha Hadid</strong>", en: "<strong>Sir Christopher Wren</strong> (St Paul's), <strong>Inigo Jones</strong>, <strong>Robert Adam</strong>, <strong>Sir Norman Foster</strong>, <strong>Zaha Hadid</strong>" } },
+      { k: { it: "Musei", en: "Museums" }, v: { it: "British Museum, National Gallery, Tate, Victoria and Albert: <strong>ingresso gratuito</strong> alle collezioni permanenti", en: "The British Museum, National Gallery, Tate, Victoria and Albert: <strong>free entry</strong> to permanent collections" } }
+    ] }
+  ],
+  links: [ { u: "https://www.britishmuseum.org/", l: "British Museum" } ]
+},
+{
+  id: "musica-cinema", p: "ch4", code: "7.5",
+  t: { it: "Musica, cinema, TV", en: "Music, cinema, TV" },
+  lead: { it: "I Proms, i compositori classici, i registi e i premi britannici.", en: "The Proms, the classical composers, the directors and the British prizes." },
+  body: [
+    { kv: [
+      { k: { it: "Musica classica", en: "Classical music" }, v: { it: "<strong>Henry Purcell</strong>, <strong>Georg Friedrich Händel</strong> (<em>Water Music</em>, <em>Messiah</em>, naturalizzato britannico), <strong>Gustav Holst</strong> (<em>The Planets</em>), <strong>Sir Edward Elgar</strong> (<em>Pomp and Circumstance</em>), <strong>Ralph Vaughan Williams</strong>, <strong>Sir William Walton</strong>, <strong>Benjamin Britten</strong>", en: "<strong>Henry Purcell</strong>, <strong>George Frideric Handel</strong> (<em>Water Music</em>, <em>Messiah</em>, a naturalised Briton), <strong>Gustav Holst</strong> (<em>The Planets</em>), <strong>Sir Edward Elgar</strong> (<em>Pomp and Circumstance</em>), <strong>Ralph Vaughan Williams</strong>, <strong>Sir William Walton</strong>, <strong>Benjamin Britten</strong>" } },
+      { k: { it: "The Proms", en: "The Proms" }, v: { it: "Festival di concerti classici della BBC alla <strong>Royal Albert Hall</strong>, dal 1927; la <strong>Last Night of the Proms</strong> chiude l'estate", en: "The BBC's classical concert season at the <strong>Royal Albert Hall</strong>, since 1927; the <strong>Last Night of the Proms</strong> closes the summer" } },
+      { k: { it: "Premi musicali", en: "Music awards" }, v: { it: "<strong>Mercury Music Prize</strong> (miglior album) e <strong>BRIT Awards</strong>", en: "The <strong>Mercury Music Prize</strong> (best album) and the <strong>BRIT Awards</strong>" } },
+      { k: { it: "Cinema", en: "Cinema" }, v: { it: "<strong>Sir Alfred Hitchcock</strong>, <strong>Sir Charlie Chaplin</strong>, <strong>Sir David Lean</strong>, <strong>Sir Ridley Scott</strong>, <strong>Nick Park</strong> (Wallace &amp; Gromit); i premi <strong>BAFTA</strong>", en: "<strong>Sir Alfred Hitchcock</strong>, <strong>Sir Charlie Chaplin</strong>, <strong>Sir David Lean</strong>, <strong>Sir Ridley Scott</strong>, <strong>Nick Park</strong> (Wallace &amp; Gromit); the <strong>BAFTA</strong> awards" } },
+      { k: { it: "TV e radio", en: "TV and radio" }, v: { it: "La <strong>BBC</strong>, finanziata dalla <em>TV licence</em>: è obbligatoria per guardare o registrare programmi in diretta e per usare iPlayer", en: "The <strong>BBC</strong>, funded by the <em>TV licence</em>: it is required to watch or record live broadcasts and to use iPlayer" } }
+    ] }
+  ],
+  links: [ { u: "https://www.bbc.co.uk/proms", l: "BBC Proms" } ]
+},
+{
+  id: "scienza", p: "ch4", code: "7.6",
+  t: { it: "Scienza e invenzioni", en: "Science and invention" },
+  lead: { it: "Dai principi di Newton al World Wide Web: i britannici che l'esame chiede.", en: "From Newton's laws to the World Wide Web: the Britons the exam asks about." },
+  body: [
+    { kv: [
+      { k: { it: "Sir Isaac Newton", en: "Sir Isaac Newton" }, v: { it: "Gravità e leggi del moto; <em>Principia Mathematica</em>", en: "Gravity and the laws of motion; the <em>Principia Mathematica</em>" } },
+      { k: { it: "Sir Alexander Fleming", en: "Sir Alexander Fleming" }, v: { it: "Scopre la <strong>penicillina</strong> (1928), Nobel 1945", en: "Discovers <strong>penicillin</strong> (1928), Nobel Prize 1945" } },
+      { k: { it: "John Logie Baird", en: "John Logie Baird" }, v: { it: "Scozzese, prima trasmissione <strong>televisiva</strong> (1926)", en: "A Scot, the first <strong>television</strong> transmission (1926)" } },
+      { k: { it: "Sir Tim Berners-Lee", en: "Sir Tim Berners-Lee" }, v: { it: "Inventa il <strong>World Wide Web</strong> (1989-90)", en: "Invents the <strong>World Wide Web</strong> (1989–90)" } },
+      { k: { it: "Sir Frank Whittle", en: "Sir Frank Whittle" }, v: { it: "Il <strong>motore a reazione</strong>", en: "The <strong>jet engine</strong>" } },
+      { k: { it: "Crick, Watson e Franklin", en: "Crick, Watson and Franklin" }, v: { it: "La struttura del <strong>DNA</strong> (Cambridge e King's College, 1953)", en: "The structure of <strong>DNA</strong> (Cambridge and King's College, 1953)" } },
+      { k: { it: "Ada Lovelace", en: "Ada Lovelace" }, v: { it: "Il primo programma per calcolatore, con Charles Babbage", en: "The first computer program, with Charles Babbage" } },
+      { k: { it: "Altri", en: "Others" }, v: { it: "<strong>Sir Christopher Cockerell</strong> (hovercraft), <strong>Sir Robert Edwards e Patrick Steptoe</strong> (fecondazione in vitro), <strong>Dolly la pecora</strong> (primo mammifero clonato, Edimburgo 1996), <strong>Alexander Graham Bell</strong> (telefono)", en: "<strong>Sir Christopher Cockerell</strong> (hovercraft), <strong>Sir Robert Edwards and Patrick Steptoe</strong> (IVF), <strong>Dolly the sheep</strong> (the first cloned mammal, Edinburgh 1996), <strong>Alexander Graham Bell</strong> (the telephone)" } }
+    ] }
+  ],
+  links: [ { u: "https://royalsociety.org/", l: "The Royal Society" } ]
+},
+{
+  id: "tempolibero", p: "ch4", code: "7.7",
+  t: { it: "Tempo libero e luoghi", en: "Leisure and places" },
+  lead: { it: "Pub, giardinaggio, National Trust e i siti UNESCO da conoscere.", en: "Pubs, gardening, the National Trust and the UNESCO sites to know." },
+  body: [
+    { ul: [
+      { it: "<strong>Pub</strong>: al centro della vita sociale. Età minima per comprare alcolici: <strong>18</strong>; a 16 si può bere birra o vino con un pasto se accompagnati da un adulto (regole locali variabili).", en: "<strong>Pubs</strong>: central to social life. Minimum age to buy alcohol: <strong>18</strong>; at 16 you may drink beer or wine with a meal if accompanied by an adult (local rules vary)." },
+      { it: "<strong>Giardinaggio</strong>: passione nazionale; il <strong>Chelsea Flower Show</strong> è l'evento simbolo.", en: "<strong>Gardening</strong>: a national passion; the <strong>Chelsea Flower Show</strong> is its landmark event." },
+      { it: "<strong>National Trust</strong> (1895) e <strong>English Heritage</strong>: tutelano case storiche, coste e paesaggi, aperti al pubblico.", en: "The <strong>National Trust</strong> (1895) and <strong>English Heritage</strong>: they protect historic houses, coastline and landscape, open to the public." },
+      { it: "Siti <strong>UNESCO</strong> citati: Stonehenge, Vallo di Adriano, la Giant's Causeway (Irlanda del Nord), le isole Orcadi, Blenheim Palace, la Jurassic Coast del Dorset e del Devon.", en: "<strong>UNESCO</strong> sites named: Stonehenge, Hadrian's Wall, the Giant's Causeway (Northern Ireland), Orkney, Blenheim Palace, the Dorset and East Devon Jurassic Coast." },
+      { it: "Luoghi da ricordare: <strong>Big Ben</strong> (il campanone dell'Elizabeth Tower), <strong>Edinburgh Castle</strong>, <strong>Snowdonia</strong>, il <strong>Lake District</strong>, <strong>Loch Lomond</strong>, la <strong>London Eye</strong>.", en: "Places to remember: <strong>Big Ben</strong> (the great bell in the Elizabeth Tower), <strong>Edinburgh Castle</strong>, <strong>Snowdonia</strong>, the <strong>Lake District</strong>, <strong>Loch Lomond</strong>, the <strong>London Eye</strong>." }
+    ] }
+  ],
+  links: [ { u: "https://www.nationaltrust.org.uk/", l: "National Trust" } ]
+},
+
+/* ============ 8. CAPITOLO 5 — GOVERNO E LEGGE ============ */
+{
+  id: "ch5", p: "root", code: "8", tag: "book",
+  t: { it: "Cap. 5 — Governo e legge", en: "Ch. 5 — Government and the law" },
+  lead: { it: "Monarchia, Parlamento, elezioni, devolution, giustizia e il tuo ruolo di cittadino.", en: "Monarchy, Parliament, elections, devolution, justice and your role as a citizen." },
+  body: [ { p: {
+    it: "Il secondo capitolo per peso d'esame. Denso di numeri (650 MP, 129 MSP, 90 MLA) e di distinzioni sottili: chi è eletto e chi è nominato, chi fa la legge e chi la applica.",
+    en: "The second heaviest chapter in the exam. Dense with numbers (650 MPs, 129 MSPs, 90 MLAs) and fine distinctions: who is elected and who is appointed, who makes law and who applies it."
+  } } ],
+  links: [ { u: "https://www.parliament.uk/about/how/", l: "UK Parliament — How Parliament works" } ]
+},
+{
+  id: "monarchia", p: "ch5", code: "8.1",
+  t: { it: "La monarchia", en: "The monarchy" },
+  lead: { it: "Il Re regna ma non governa: capo dello Stato, politicamente neutrale.", en: "The King reigns but does not rule: head of state, politically neutral." },
+  body: [
+    { ul: [
+      { it: "Il Regno Unito è una <strong>monarchia costituzionale</strong>: il sovrano è capo dello Stato, il potere di governo sta al Parlamento e al Governo.", en: "The UK is a <strong>constitutional monarchy</strong>: the monarch is head of state, while governing power lies with Parliament and the Government." },
+      { it: "Il monarca <strong>non è politicamente schierato</strong> e non esprime opinioni di parte.", en: "The monarch is <strong>politically neutral</strong> and expresses no party views." },
+      { it: "Funzioni: apre il Parlamento ogni anno (<strong>State Opening</strong>, con il <em>King's Speech</em> scritto dal Governo), riceve settimanalmente il Primo Ministro, dà il <strong>Royal Assent</strong> alle leggi, nomina il Primo Ministro.", en: "Duties: opens Parliament each year (the <strong>State Opening</strong>, with the King's Speech written by the Government), meets the Prime Minister weekly, gives <strong>Royal Assent</strong> to laws, appoints the Prime Minister." },
+      { it: "Il sovrano è <strong>Supreme Governor della Church of England</strong> e <strong>capo del Commonwealth</strong>.", en: "The monarch is <strong>Supreme Governor of the Church of England</strong> and <strong>Head of the Commonwealth</strong>." },
+      { it: "<strong>Aggiornamento</strong>: il manuale descrive <strong>Elisabetta II</strong>, regina dal 1952. Dal settembre 2022 il sovrano è <strong>Carlo III</strong> e le domande d'esame sul “re attuale” sono state aggiornate di conseguenza; il <strong>Principe di Galles</strong> è oggi <strong>William</strong>.", en: "<strong>Update</strong>: the handbook describes <strong>Elizabeth II</strong>, queen from 1952. Since September 2022 the monarch is <strong>Charles III</strong>, and exam questions about “the current king” have been updated accordingly; the <strong>Prince of Wales</strong> is now <strong>William</strong>." }
+    ] }
+  ],
+  links: [ { u: "https://www.royal.uk/", l: "The Royal Family — royal.uk" } ]
+},
+{
+  id: "parlamento", p: "ch5", code: "8.2",
+  t: { it: "Il Parlamento", en: "Parliament" },
+  lead: { it: "Commons eletti, Lords nominati, Corona: le tre parti che fanno la legge.", en: "An elected Commons, an appointed Lords and the Crown: the three parts that make law." },
+  body: [
+    { kv: [
+      { k: { it: "House of Commons", en: "House of Commons" }, v: { it: "<strong>650 MP</strong> eletti, uno per <em>constituency</em>; è la camera che conta di più perché è eletta e controlla il bilancio", en: "<strong>650 MPs</strong> elected, one per constituency; the more powerful chamber because it is elected and controls money" } },
+      { k: { it: "House of Lords", en: "House of Lords" }, v: { it: "Non eletta: <strong>life peers</strong> nominati, alcuni <strong>hereditary peers</strong>, vescovi anglicani. Rivede e può ritardare le leggi, ma i Commons possono avere l'ultima parola", en: "Unelected: appointed <strong>life peers</strong>, some <strong>hereditary peers</strong>, and Church of England bishops. It revises and can delay legislation, but the Commons can have the final say" } },
+      { k: { it: "Speaker", en: "The Speaker" }, v: { it: "Presiede i Commons, è <strong>politicamente neutrale</strong> pur essendo un MP eletto dai colleghi", en: "Chairs the Commons and is <strong>politically neutral</strong>, though an MP chosen by fellow MPs" } },
+      { k: { it: "Corona", en: "The Crown" }, v: { it: "Il <strong>Royal Assent</strong> completa il percorso di una legge", en: "<strong>Royal Assent</strong> completes a law's passage" } },
+      { k: { it: "Opposizione", en: "The Opposition" }, v: { it: "Il secondo partito forma lo <strong>shadow cabinet</strong>; il suo leader guida l'opposizione ufficiale", en: "The second-largest party forms the <strong>shadow cabinet</strong>; its leader heads the official Opposition" } },
+      { k: { it: "Whips", en: "Whips" }, v: { it: "Assicurano la disciplina di voto dei parlamentari del partito", en: "Ensure party MPs vote with the line" } },
+      { k: { it: "Sede", en: "Where" }, v: { it: "<strong>Palace of Westminster</strong>, Londra", en: "The <strong>Palace of Westminster</strong>, London" } }
+    ] }
+  ],
+  links: [ { u: "https://www.parliament.uk/about/how/", l: "UK Parliament — How it works" } ]
+},
+{
+  id: "governo", p: "ch5", code: "8.3",
+  t: { it: "Governo e Primo Ministro", en: "Government and Prime Minister" },
+  lead: { it: "Il PM guida il Cabinet; i civil servants restano al loro posto quando cambia il governo.", en: "The PM leads the Cabinet; civil servants stay put when the government changes." },
+  body: [
+    { ul: [
+      { it: "Il <strong>Primo Ministro</strong> è il leader del partito che riesce a formare una maggioranza nei Commons; risiede al <strong>10 Downing Street</strong> e ha una residenza di campagna a <strong>Chequers</strong>.", en: "The <strong>Prime Minister</strong> is the leader of the party able to command a majority in the Commons; lives at <strong>10 Downing Street</strong> with a country house at <strong>Chequers</strong>." },
+      { it: "Nomina il <strong>Cabinet</strong>, una ventina di ministri di primo piano: <em>Chancellor of the Exchequer</em> (economia), <em>Home Secretary</em> (interni e immigrazione), <em>Foreign Secretary</em> (esteri), <em>Lord Chancellor</em> (giustizia).", en: "They appoint the <strong>Cabinet</strong>, around twenty senior ministers: the <em>Chancellor of the Exchequer</em> (economy), <em>Home Secretary</em> (interior and immigration), <em>Foreign Secretary</em>, <em>Lord Chancellor</em> (justice)." },
+      { it: "I <strong>civil servants</strong> sono funzionari professionali, <strong>politicamente neutrali</strong> e scelti per merito: restano in carica quando cambia il governo.", en: "<strong>Civil servants</strong> are professional officials, <strong>politically neutral</strong> and appointed on merit: they stay when the government changes." },
+      { it: "Il governo locale (<em>councils</em>) gestisce scuole, rifiuti, strade e servizi sociali, finanziato dalla <strong>council tax</strong> e da trasferimenti centrali.", en: "Local government (<em>councils</em>) runs schools, waste, roads and social services, funded by <strong>council tax</strong> and central grants." },
+      { it: "La stampa è libera e non censurata: il manuale sottolinea che i giornali possono criticare apertamente il governo.", en: "The press is free and uncensored: the handbook stresses that newspapers may openly criticise the government." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/government/how-government-works", l: "GOV.UK — How government works" } ]
+},
+{
+  id: "elezioni", p: "ch5", code: "8.4",
+  t: { it: "Elezioni e voto", en: "Elections and voting" },
+  lead: { it: "First past the post, almeno ogni 5 anni, voto a 18 anni, registro elettorale obbligatorio.", en: "First past the post, at least every 5 years, voting at 18, compulsory electoral registration." },
+  body: [
+    { ul: [
+      { it: "<strong>General election</strong> almeno ogni <strong>5 anni</strong>; il sistema è il <strong>first past the post</strong>: in ogni collegio vince chi prende più voti.", en: "A <strong>general election</strong> at least every <strong>5 years</strong>; the system is <strong>first past the post</strong>: whoever gets most votes in a constituency wins it." },
+      { it: "Una <strong>by-election</strong> si tiene quando un seggio resta vacante fra un'elezione generale e l'altra.", en: "A <strong>by-election</strong> is held when a seat falls vacant between general elections." },
+      { it: "Si vota a <strong>18 anni</strong>; in Scozia e Galles si vota a <strong>16</strong> per le elezioni devolute e locali.", en: "You vote at <strong>18</strong>; in Scotland and Wales at <strong>16</strong> for devolved and local elections." },
+      { it: "Bisogna essere iscritti all'<strong>electoral register</strong>: l'iscrizione è un obbligo di legge per il capofamiglia contattato.", en: "You must be on the <strong>electoral register</strong>: registering is a legal duty when your household is asked." },
+      { it: "I seggi (<em>polling stations</em>) aprono dalle <strong>7:00 alle 22:00</strong>; il voto è <strong>segreto</strong>. Si può votare per posta o per delega (<em>proxy</em>).", en: "Polling stations open <strong>7am to 10pm</strong>; the ballot is <strong>secret</strong>. You can vote by post or by proxy." },
+      { it: "<strong>Aggiornamento post-manuale</strong>: dal maggio 2023 in Gran Bretagna serve un <strong>documento con foto</strong> per votare di persona.", en: "<strong>Update since the handbook</strong>: since May 2023, <strong>photo ID</strong> is required to vote in person in Great Britain." },
+      { it: "Chiunque può assistere ai dibattiti dei Commons e dei Lords dalle gallerie pubbliche, o contattare il proprio MP.", en: "Anyone can watch Commons and Lords debates from the public galleries, or contact their own MP." }
+    ] }
+  ],
+  links: [
+    { u: "https://www.gov.uk/register-to-vote", l: "GOV.UK — Register to vote" },
+    { u: "https://www.electoralcommission.org.uk/", l: "Electoral Commission" }
+  ]
+},
+{
+  id: "devolution", p: "ch5", code: "8.5",
+  t: { it: "Devolution", en: "Devolution" },
+  lead: { it: "Poteri trasferiti a Edimburgo, Cardiff e Belfast dal 1998-99.", en: "Powers transferred to Edinburgh, Cardiff and Belfast since 1998–99." },
+  body: [
+    { kv: [
+      { k: { it: "Scozia", en: "Scotland" }, v: { it: "<strong>Scottish Parliament</strong> a <strong>Holyrood</strong>, Edimburgo: <strong>129 MSP</strong>. Poteri su sanità, istruzione, giustizia e alcune imposte", en: "The <strong>Scottish Parliament</strong> at <strong>Holyrood</strong>, Edinburgh: <strong>129 MSPs</strong>. Powers over health, education, justice and some taxes" } },
+      { k: { it: "Galles", en: "Wales" }, v: { it: "<strong>Senedd Cymru / Welsh Parliament</strong> a Cardiff: <strong>60 membri</strong>. Nel manuale del 2013 è ancora la <em>National Assembly for Wales</em>, rinominata nel 2020", en: "The <strong>Senedd Cymru / Welsh Parliament</strong> in Cardiff: <strong>60 members</strong>. In the 2013 handbook it is still the <em>National Assembly for Wales</em>, renamed in 2020" } },
+      { k: { it: "Irlanda del Nord", en: "Northern Ireland" }, v: { it: "<strong>Northern Ireland Assembly</strong> a <strong>Stormont</strong>, Belfast: <strong>90 MLA</strong>, con governo di condivisione del potere nato dal Good Friday Agreement", en: "The <strong>Northern Ireland Assembly</strong> at <strong>Stormont</strong>, Belfast: <strong>90 MLAs</strong>, with power-sharing government from the Good Friday Agreement" } },
+      { k: { it: "Non devoluto", en: "Reserved" }, v: { it: "Restano a Westminster: difesa, politica estera, immigrazione, politica monetaria", en: "Kept at Westminster: defence, foreign policy, immigration, monetary policy" } }
+    ] },
+    { p: {
+      it: "I sistemi elettorali devoluti usano forme di rappresentanza proporzionale, non il <em>first past the post</em>.",
+      en: "The devolved bodies use forms of proportional representation, not first past the post."
+    } }
+  ],
+  links: [ { u: "https://www.parliament.scot/", l: "Scottish Parliament" } ]
+},
+{
+  id: "giustizia", p: "ch5", code: "8.6",
+  t: { it: "Il sistema giudiziario", en: "The justice system" },
+  lead: { it: "Penale e civile, magistrati volontari, giurie da 12 (15 in Scozia), giudici indipendenti.", en: "Criminal and civil, volunteer magistrates, juries of 12 (15 in Scotland), independent judges." },
+  body: [
+    { kv: [
+      { k: { it: "Principio", en: "Principle" }, v: { it: "I <strong>giudici sono indipendenti</strong> dal governo e interpretano la legge; la presunzione di innocenza è la regola", en: "<strong>Judges are independent</strong> of government and interpret the law; the presumption of innocence is the rule" } },
+      { k: { it: "Reati minori", en: "Minor crimes" }, v: { it: "<strong>Magistrates' Court</strong> in Inghilterra, Galles e Irlanda del Nord: giudici volontari non retribuiti (<em>Justices of the Peace</em>), di norma senza formazione legale. In Scozia: <strong>Justice of the Peace Court</strong>", en: "The <strong>Magistrates' Court</strong> in England, Wales and Northern Ireland: unpaid volunteer <em>Justices of the Peace</em>, usually without legal training. In Scotland: the <strong>Justice of the Peace Court</strong>" } },
+      { k: { it: "Reati gravi", en: "Serious crimes" }, v: { it: "<strong>Crown Court</strong> con giuria di <strong>12</strong> persone (Inghilterra, Galles, Irlanda del Nord); in Scozia lo <strong>Sheriff Court</strong> o l'High Court con giuria di <strong>15</strong>", en: "The <strong>Crown Court</strong> with a jury of <strong>12</strong> (England, Wales, Northern Ireland); in Scotland the <strong>Sheriff Court</strong> or High Court with a jury of <strong>15</strong>" } },
+      { k: { it: "Cause civili", en: "Civil cases" }, v: { it: "<strong>County Court</strong> per debiti, contratti, divorzi; il <strong>small claims</strong> per cause di modesto valore, senza avvocato", en: "The <strong>County Court</strong> for debt, contracts and divorce; the <strong>small claims</strong> procedure for low-value cases, without a lawyer" } },
+      { k: { it: "Vertice", en: "Top" }, v: { it: "La <strong>Supreme Court</strong>, dal 2009, è l'ultimo grado di appello", en: "The <strong>Supreme Court</strong>, since 2009, is the final court of appeal" } },
+      { k: { it: "Assistenza", en: "Help" }, v: { it: "<strong>Solicitor</strong> per consulenza e pratiche; il <strong>legal aid</strong> può coprire le spese di chi non può permettersele", en: "A <strong>solicitor</strong> for advice and paperwork; <strong>legal aid</strong> can cover costs for those who cannot pay" } }
+    ] }
+  ],
+  links: [ { u: "https://www.judiciary.uk/", l: "Courts and Tribunals Judiciary" } ]
+},
+{
+  id: "polizia-diritti", p: "ch5", code: "8.7",
+  t: { it: "Polizia e diritti", en: "Police and rights" },
+  lead: { it: "Doveri della polizia, i tuoi diritti e le leggi contro la discriminazione.", en: "Police duties, your rights and the laws against discrimination." },
+  body: [
+    { ul: [
+      { it: "La polizia deve <strong>proteggere il pubblico, prevenire e indagare i reati</strong> e agire con equità e onestà; risponde a un <strong>Police and Crime Commissioner</strong> eletto, e i reclami vanno all'organo indipendente di vigilanza.", en: "The police must <strong>protect the public, prevent and investigate crime</strong> and act fairly and honestly; they answer to an elected <strong>Police and Crime Commissioner</strong>, and complaints go to the independent watchdog." },
+      { it: "L'<strong>Equality Act 2010</strong> vieta la discriminazione per età, disabilità, sesso, gravidanza, razza, religione o credo, orientamento sessuale, identità di genere, stato civile.", en: "The <strong>Equality Act 2010</strong> prohibits discrimination on grounds of age, disability, sex, pregnancy, race, religion or belief, sexual orientation, gender reassignment and marriage." },
+      { it: "Sono reati gravi la <strong>violenza domestica</strong>, le <strong>mutilazioni genitali femminili</strong>, il <strong>matrimonio forzato</strong> e i cosiddetti “delitti d'onore”: nessuna tradizione li giustifica.", en: "<strong>Domestic violence</strong>, <strong>female genital mutilation</strong>, <strong>forced marriage</strong> and so-called “honour” crimes are serious offences: no tradition excuses them." },
+      { it: "Sono reati anche il possesso di droghe, la guida in stato di ebbrezza, il possesso di coltelli o armi, e il reato d'odio (<em>hate crime</em>).", en: "Drug possession, drink-driving, carrying knives or weapons and hate crime are all criminal offences." },
+      { it: "Chi ha bisogno di aiuto può rivolgersi a <strong>Citizens Advice</strong>, gratuito e indipendente.", en: "Anyone needing help can turn to <strong>Citizens Advice</strong>, free and independent." }
+    ] }
+  ],
+  links: [
+    { u: "https://www.citizensadvice.org.uk/", l: "Citizens Advice" },
+    { u: "https://www.equalityhumanrights.com/", l: "Equality and Human Rights Commission" }
+  ]
+},
+{
+  id: "doveri-civici", p: "ch5", code: "8.8",
+  t: { it: "Tasse e doveri civici", en: "Tax and civic duties" },
+  lead: { it: "National Insurance, income tax, self assessment, giuria, patente.", en: "National Insurance, income tax, self assessment, jury service, driving." },
+  body: [
+    { ul: [
+      { it: "Il <strong>National Insurance number</strong> è personale e serve per lavorare; i contributi danno diritto a pensione statale e alcuni sussidi.", en: "Your <strong>National Insurance number</strong> is personal and needed to work; contributions build entitlement to the state pension and some benefits." },
+      { it: "L'<strong>income tax</strong> è di norma trattenuta alla fonte con il <strong>PAYE</strong>; autonomi e redditi ulteriori richiedono la <strong>self assessment</strong>, da presentare entro il <strong>31 gennaio</strong> online.", en: "<strong>Income tax</strong> is normally deducted at source through <strong>PAYE</strong>; the self-employed and those with extra income file a <strong>self assessment</strong> return by <strong>31 January</strong> online." },
+      { it: "La <strong>giuria</strong> è un dovere: chi è iscritto al registro elettorale può essere convocato.", en: "<strong>Jury service</strong> is a duty: anyone on the electoral register can be called." },
+      { it: "Si può guidare da <strong>17 anni</strong> (16 per il ciclomotore); servono patente valida, <strong>assicurazione</strong>, tassa di circolazione e <strong>MOT</strong> annuale per i veicoli oltre i 3 anni.", en: "You can drive at <strong>17</strong> (16 for a moped); you need a valid licence, <strong>insurance</strong>, vehicle tax and an annual <strong>MOT</strong> for vehicles over 3 years old." },
+      { it: "Le patenti UE non britanniche vanno convertite entro i termini previsti se ti stabilisci nel Regno Unito.", en: "Non-UK EU licences must be exchanged within the applicable time limits once you settle in the UK." }
+    ] }
+  ],
+  links: [
+    { u: "https://www.gov.uk/income-tax", l: "GOV.UK — Income Tax" },
+    { u: "https://www.gov.uk/jury-service", l: "GOV.UK — Jury service" }
+  ]
+},
+{
+  id: "comunita", p: "ch5", code: "8.9",
+  t: { it: "Il tuo ruolo nella comunità", en: "Your role in the community" },
+  lead: { it: "Volontariato, scuola, donazioni, ambiente: il capitolo finale del manuale.", en: "Volunteering, schools, giving, the environment: the handbook's closing chapter." },
+  body: [
+    { ul: [
+      { it: "Fare il <strong>school governor</strong> o membro di uno <em>school board</em> in Scozia; il <strong>magistrate</strong> volontario; il <strong>Special Constable</strong> nella polizia.", en: "Serving as a <strong>school governor</strong>, or on a school board in Scotland; as a volunteer <strong>magistrate</strong>; as a <strong>Special Constable</strong>." },
+      { it: "Donare <strong>sangue</strong> e organi; sostenere enti di beneficenza con tempo o denaro.", en: "Donating <strong>blood</strong> and organs; supporting charities with time or money." },
+      { it: "Partecipare alla politica: iscriversi a un partito, fare campagna, candidarsi alle elezioni locali.", en: "Taking part in politics: joining a party, campaigning, standing in local elections." },
+      { it: "Rispettare l'ambiente: riciclare, ridurre gli sprechi, spostarsi a piedi o con i mezzi pubblici.", en: "Caring for the environment: recycling, cutting waste, walking or using public transport." },
+      { it: "Il messaggio del manuale: la cittadinanza non finisce con il certificato, comincia con la partecipazione.", en: "The handbook's message: citizenship does not end with the certificate, it begins with participation." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/government/get-involved", l: "GOV.UK — Get involved" } ]
+},
+{
+  id: "mondo", p: "ch5", code: "8.10",
+  t: { it: "Il Regno Unito nel mondo", en: "The UK and the world" },
+  lead: { it: "Commonwealth, ONU, NATO, Consiglio d'Europa — e il rapporto con l'Unione europea.", en: "The Commonwealth, the UN, NATO, the Council of Europe — and the relationship with the EU." },
+  body: [
+    { kv: [
+      { k: { it: "Commonwealth", en: "The Commonwealth" }, v: { it: "Associazione volontaria di paesi in gran parte ex-Impero; il <strong>Re ne è il capo</strong>; non ha potere sui membri", en: "A voluntary association of countries, mostly former Empire; <strong>the King is its Head</strong>; it has no power over members" } },
+      { k: { it: "Nazioni Unite", en: "United Nations" }, v: { it: "Il Regno Unito è <strong>membro permanente del Consiglio di Sicurezza</strong>, con diritto di veto", en: "The UK is a <strong>permanent member of the Security Council</strong>, with a veto" } },
+      { k: { it: "NATO", en: "NATO" }, v: { it: "Alleanza di difesa collettiva: un attacco a un membro è un attacco a tutti", en: "A collective defence alliance: an attack on one member is an attack on all" } },
+      { k: { it: "Consiglio d'Europa", en: "Council of Europe" }, v: { it: "Organizzazione per diritti umani e stato di diritto, all'origine della <strong>Convenzione europea dei diritti dell'uomo</strong>: <em>è cosa distinta dall'Unione europea</em>", en: "The human-rights and rule-of-law body behind the <strong>European Convention on Human Rights</strong>: <em>a separate thing from the European Union</em>" } },
+      { k: { it: "Unione europea", en: "European Union" }, v: { it: "Il manuale del 2013 descrive il Regno Unito come Stato membro. <strong>Dopo il manuale</strong>: referendum 2016, uscita il <strong>31 gennaio 2020</strong>", en: "The 2013 handbook describes the UK as a member state. <strong>Since the handbook</strong>: the 2016 referendum, and departure on <strong>31 January 2020</strong>" } }
+    ] }
+  ],
+  links: [ { u: "https://thecommonwealth.org/", l: "The Commonwealth" } ]
+},
+
+/* ============ 9. AGGIORNAMENTI 2026 ============ */
+{
+  id: "news", p: "root", code: "9", tag: "update",
+  t: { it: "Aggiornamenti 2026", en: "2026 updates" },
+  lead: { it: "Cosa è cambiato, cosa sta per cambiare e cosa nel manuale è ormai superato.", en: "What has changed, what is about to, and what the handbook has outlived." },
+  body: [ { p: {
+    it: "Il quadro normativo si sta muovendo parecchio. Questa area separa ciò che è <strong>già in vigore</strong> da ciò che è <strong>solo proposto</strong>: una distinzione che vale soldi e tempo.",
+    en: "The legal landscape is moving fast. This area separates what is <strong>already in force</strong> from what is <strong>merely proposed</strong>: a distinction worth real money and time."
+  } } ],
+  links: []
+},
+{
+  id: "test-2026", p: "news", code: "9.1", tag: "update",
+  t: { it: "Il test nel 2026", en: "The test in 2026" },
+  lead: { it: "Nessun cambiamento sostanziale: stesso libro, stesso formato, stessa tariffa.", en: "No substantive change: same book, same format, same fee." },
+  body: [
+    { ul: [
+      { it: "Nel 2026 il test resta <strong>identico</strong>: 24 domande, 45 minuti, 18/24, £50, manuale di 3ª edizione (2013).", en: "In 2026 the test is <strong>unchanged</strong>: 24 questions, 45 minutes, 18/24, £50, the 3rd-edition (2013) handbook." },
+      { it: "Non è stata pubblicata alcuna nuova edizione ufficiale del manuale né un nuovo programma d'esame.", en: "No new official edition of the handbook and no new syllabus have been published." },
+      { it: "Le domande sono state <strong>ritoccate</strong> dove il tempo le aveva rese false: il sovrano è Carlo III, il Principe di Galles è William.", en: "Questions have been <strong>touched up</strong> where time had made them false: the monarch is Charles III, the Prince of Wales is William." },
+      { it: "L'Home Office ha annunciato l'intenzione di <strong>modernizzare</strong> il test (istituzioni devolute, vita civica contemporanea), ma non ci sono date né testi definitivi.", en: "The Home Office has signalled an intention to <strong>modernise</strong> the test (devolved institutions, contemporary civic life), but there are no dates or final texts." },
+      { it: "Diffida dei libri di terze parti intitolati “edizione 2026”: sono rielaborazioni dello stesso manuale del 2013.", en: "Be sceptical of third-party books billed as “2026 edition”: they are repackagings of the same 2013 handbook." }
+    ] }
+  ],
+  links: [ { u: "https://www.gov.uk/life-in-the-uk-test", l: "GOV.UK — pagina ufficiale del test" } ]
+},
+{
+  id: "earned", p: "news", code: "9.2", tag: "update",
+  t: { it: "Earned settlement", en: "Earned settlement" },
+  lead: { it: "La proposta di portare l'ILR da 5 a 10 anni: consultazione chiusa, legge non ancora fatta.", en: "The proposal to move ILR from 5 to 10 years: consultation closed, not yet law." },
+  body: [
+    { p: {
+      it: "Dopo il <em>white paper</em> del 2025, il Governo ha proposto un modello di <strong>settlement “guadagnato”</strong>: il periodo di qualificazione standard salirebbe da <strong>5 a 10 anni</strong>, con riduzioni per chi accumula “contributi”.",
+      en: "Following the 2025 white paper, the Government proposed an <strong>“earned” settlement</strong> model: the standard qualifying period would rise from <strong>5 to 10 years</strong>, with reductions for those who accumulate “contributions”."
+    } },
+    { kv: [
+      { k: { it: "I quattro pilastri", en: "Four pillars" }, v: { it: "Carattere, integrazione, contributo alla società britannica, residenza", en: "Character, integration, contribution to British society, residence" } },
+      { k: { it: "Consultazione", en: "Consultation" }, v: { it: "Chiusa il <strong>12 febbraio 2026</strong>, con oltre 200.000 risposte", en: "Closed on <strong>12 February 2026</strong>, with more than 200,000 responses" } },
+      { k: { it: "Stato", en: "Status" }, v: { it: "Ad agosto 2026 le <em>Immigration Rules</em> attuative <strong>non sono state depositate</strong> in Parlamento; l'entrata in vigore è attesa non prima dell'autunno 2026", en: "As of August 2026 the implementing Immigration Rules have <strong>not been laid</strong> before Parliament; commencement is expected no earlier than autumn 2026" } },
+      { k: { it: "Cosa fare", en: "What to do" }, v: { it: "Chi matura i requisiti sotto le regole attuali dei 5 anni ha un motivo concreto per <strong>presentare domanda appena possibile</strong>", en: "Anyone qualifying under the current 5-year rules has a concrete reason to <strong>apply as soon as they can</strong>" } }
+    ] },
+    { warn: {
+      it: "Soglie a punti, durate e regime transitorio possono ancora cambiare prima del testo definitivo. Nessuno può dirti oggi con certezza come sarai trattato domani: se sei vicino alla soglia, fatti seguire da un consulente OISC o da un avvocato.",
+      en: "Point thresholds, durations and transitional arrangements can still change before the final text. Nobody can tell you today how you will be treated tomorrow: if you are near the threshold, get advice from an OISC adviser or a solicitor."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/government/collections/immigration-rules-statement-of-changes", l: "GOV.UK — Statements of changes to the Immigration Rules" } ]
+},
+{
+  id: "checklist", p: "news", code: "9.3",
+  t: { it: "Checklist finale", en: "Final checklist" },
+  lead: { it: "Le sette cose da avere in mano prima di premere “invia”.", en: "The seven things to have in hand before you hit “submit”." },
+  body: [
+    { ul: [
+      { it: "Certificato <strong>Life in the UK Test</strong> superato (lettera di esito).", en: "A passed <strong>Life in the UK Test</strong> certificate (the result letter)." },
+      { it: "Certificato di <strong>inglese B1</strong> SELT o prova dell'esenzione (con verifica Ecctis se è una laurea estera).", en: "A <strong>B1 English</strong> SELT certificate or proof of exemption (with Ecctis verification for a foreign degree)." },
+      { it: "<strong>ILR</strong> da almeno 12 mesi (o coniuge britannico con ILR alla data della domanda).", en: "<strong>ILR</strong> held for at least 12 months (or a British spouse with ILR at the date of application)." },
+      { it: "<strong>Registro dei viaggi</strong> completo: sotto 450 giorni in 5 anni (o 270 in 3), sotto 90 nell'ultimo anno.", en: "A complete <strong>travel log</strong>: under 450 days in 5 years (or 270 in 3), under 90 in the final year." },
+      { it: "<strong>Due garanti</strong> che rispettino i requisiti, avvisati e disponibili.", en: "<strong>Two referees</strong> who meet the requirements, briefed and available." },
+      { it: "Situazione <strong>fiscale e penale</strong> pulita e documentabile.", en: "A clean, documentable <strong>tax and criminal</strong> record." },
+      { it: "La <strong>tassa</strong> pronta e la consapevolezza che non è rimborsabile in caso di rifiuto.", en: "The <strong>fee</strong> ready, and the awareness that it is not refunded if you are refused." }
+    ] },
+    { p: {
+      it: "Poi resta solo la parte facile: 24 domande in 45 minuti, e la cerimonia.",
+      en: "After that only the easy part is left: 24 questions in 45 minutes, and the ceremony."
+    } }
+  ],
+  links: [ { u: "https://www.gov.uk/apply-citizenship-indefinite-leave-to-remain", l: "GOV.UK — Apply" } ]
+}
+
+  ]
+};
+
+</script>
+<script>
+/* ============================================================
+   Dal visto al passaporto — diagramma di flusso
+   Il percorso decisionale completo: ogni domanda, ogni ramo,
+   con i numeri e le regole sui nodi. Bilingue, stampabile.
+   ============================================================ */
+
+(function () {
+  "use strict";
+
+  /* ------------------------- il flusso ------------------------- */
+
+  var PHASES = [
+    { t: { it: "Idoneità", en: "Eligibility" },
+      s: { it: "Chi può presentare domanda, e su quale base giuridica", en: "Who may apply, and on what legal basis" } },
+    { t: { it: "Residenza", en: "Residence" },
+      s: { it: "Il requisito che fa cadere più domande di ogni altro", en: "The requirement that sinks more applications than any other" } },
+    { t: { it: "Conoscenza e carattere", en: "Knowledge and character" },
+      s: { it: "Le due gambe del KoLL, più la condotta", en: "The two legs of KoLL, plus conduct" } },
+    { t: { it: "La domanda", en: "The application" },
+      s: { it: "Moduli, tassa, biometria, attesa", en: "Forms, fee, biometrics, waiting" } },
+    { t: { it: "Dopo la decisione", en: "After the decision" },
+      s: { it: "Cerimonia, passaporto, doppia cittadinanza", en: "Ceremony, passport, dual nationality" } }
+  ];
+
+  var FLOW = [
+    { phase: 0, k: "start",
+      t: { it: "Vivi nel Regno Unito e vuoi la cittadinanza", en: "You live in the UK and want citizenship" } },
+
+    { phase: 0, k: "d",
+      t: { it: "Hai 18 anni compiuti?", en: "Are you 18 or over?" },
+      d: { it: "Serve anche la capacità di intendere e volere.", en: "You must also be of sound mind." },
+      side: { k: "exit",
+        t: { it: "La domanda la fa un genitore", en: "A parent applies for you" },
+        d: { it: "Per i minorenni si usa il <b>modulo MN1</b>, non il modulo AN: niente Life in the UK Test e niente prova di inglese. Un genitore già britannico può registrare il figlio.",
+             en: "Under-18s use <b>form MN1</b>, not form AN: no Life in the UK Test and no English test. A parent who is already British can register the child." } } },
+
+    { phase: 0, k: "d",
+      t: { it: "Hai l'ILR o il settled status?", en: "Do you have ILR or settled status?" },
+      d: { it: "La residenza permanente è quasi sempre il gradino obbligato prima della cittadinanza.", en: "Settlement is nearly always the required step before citizenship." },
+      side: { k: "act", back: true,
+        t: { it: "Prima il settlement", en: "Settlement comes first" },
+        d: { it: "Di norma <b>5 anni continuativi</b> su un visto idoneo (Skilled Worker, coniuge, Global Talent…). L'ILR richiede già <b>Life in the UK Test</b> e <b>inglese B1</b>: quel lavoro non è sprecato, vale anche per la cittadinanza. L'ILR decade dopo <b>2 anni consecutivi</b> fuori dal Regno Unito.<br><b>⚠ Earned settlement</b>: proposta di portare il periodo standard da 5 a 10 anni. Consultazione chiusa il 12 febbraio 2026; ad agosto 2026 le regole attuative <b>non sono state depositate</b> in Parlamento.",
+             en: "Normally <b>5 continuous years</b> on a qualifying visa (Skilled Worker, spouse, Global Talent…). ILR itself requires the <b>Life in the UK Test</b> and <b>English at B1</b>: that work is not wasted, it counts for citizenship too. ILR lapses after <b>2 consecutive years</b> outside the UK.<br><b>⚠ Earned settlement</b>: a proposal to raise the standard period from 5 to 10 years. The consultation closed on 12 February 2026; as of August 2026 the implementing rules have <b>not been laid</b> before Parliament." } } },
+
+    { phase: 0, k: "fork",
+      q: { it: "Quale percorso ti riguarda?", en: "Which route applies to you?" },
+      panes: [
+        { t: { it: "Percorso standard — sez. 6(1)", en: "Standard route — s.6(1)" },
+          d: { it: "<b>5 anni</b> di residenza · max <b>450 giorni</b> fuori dal Regno Unito · ILR posseduto da almeno <b>12 mesi</b>",
+               en: "<b>5 years</b> of residence · max <b>450 days</b> outside the UK · ILR held for at least <b>12 months</b>" } },
+        { t: { it: "Coniuge di britannico — sez. 6(2)", en: "Spouse of a British citizen — s.6(2)" },
+          d: { it: "<b>3 anni</b> di residenza · max <b>270 giorni</b> fuori · ILR alla data della domanda, <b>nessuna attesa</b> di 12 mesi",
+               en: "<b>3 years</b> of residence · max <b>270 days</b> away · ILR at the date of application, <b>no 12-month wait</b>" } }
+      ] },
+
+    { phase: 1, k: "d",
+      t: { it: "Rientri nei limiti di assenza?", en: "Are you within the absence limits?" },
+      d: { it: "<b>450 giorni</b> in 5 anni (o <b>270</b> in 3) <b>e</b> non più di <b>90 giorni</b> negli ultimi 12 mesi. Il conteggio parte dalla data in cui l'Home Office <i>riceve</i> la domanda.",
+           en: "<b>450 days</b> over 5 years (or <b>270</b> over 3) <b>and</b> no more than <b>90 days</b> in the final 12 months. The count runs back from the date the Home Office <i>receives</i> the application." },
+      side: { k: "act", back: true,
+        t: { it: "Aspetta e ricalcola", en: "Wait and recount" },
+        d: { it: "La finestra si sposta con la data della domanda: rimandare di qualche mese può bastare. Tieni un registro dei viaggi con partenze e rientri fin dal primo giorno. L'Home Office ha discrezionalità sui superamenti contenuti, ma è discrezionale — non un diritto.",
+             en: "The window moves with your application date: postponing by a few months is often enough. Keep a travel log with departures and returns from day one. The Home Office has discretion over modest excesses, but it is discretion — not a right." } } },
+
+    { phase: 1, k: "d",
+      t: { it: "Eri nel Regno Unito esattamente 5 (o 3) anni prima?", en: "Were you in the UK exactly 5 (or 3) years before?" },
+      d: { it: "Serve la presenza fisica nel giorno preciso che apre il periodo di qualificazione.", en: "Physical presence is required on the exact day that opens the qualifying period." },
+      side: { k: "act", back: true,
+        t: { it: "Sposta la data di domanda", en: "Move your application date" },
+        d: { it: "Non c'è nulla da sanare: basta scegliere una data di presentazione il cui giorno di apertura ti trovi nel Regno Unito.",
+             en: "There is nothing to fix: simply pick a submission date whose opening day finds you in the UK." } } },
+
+    { phase: 2, k: "d",
+      t: { it: "Hai superato il Life in the UK Test?", en: "Have you passed the Life in the UK Test?" },
+      d: { it: "Il certificato <b>non scade</b> e vale sia per l'ILR sia per la cittadinanza: si fa una volta sola. Esenti: <b>under 18</b>, <b>65 o più</b>, condizione medica documentata su modulo ufficiale.",
+           en: "The certificate <b>never expires</b> and counts for both ILR and citizenship: you sit it once. Exempt: <b>under 18</b>, <b>65 or over</b>, or a documented medical condition on the official form." },
+      side: { k: "act", back: true,
+        t: { it: "Prenota, studia, passa", en: "Book it, study, pass" },
+        d: { it: "Prenotazione solo su GOV.UK: <b>£50</b>, almeno <b>3 giorni lavorativi</b> di anticipo. L'indirizzo inserito deve coincidere <i>esattamente</i> con quello del documento che porterai: è il motivo numero uno di respingimento all'ingresso.<br><b>24 domande · 45 minuti · 18/24 per passare</b>. Unica fonte ammessa: <i>Life in the United Kingdom — A Guide for New Residents</i>, 3ª edizione (2013), cinque capitoli.<br>Se non passi: <b>7 giorni</b> di attesa, altri £50, tentativi illimitati.",
+             en: "Book only on GOV.UK: <b>£50</b>, at least <b>3 working days</b> ahead. The address you enter must match <i>exactly</i> the one on the ID you bring: this is the number-one reason people are turned away.<br><b>24 questions · 45 minutes · 18/24 to pass</b>. The only permitted source: <i>Life in the United Kingdom — A Guide for New Residents</i>, 3rd edition (2013), five chapters.<br>If you fail: <b>7 days</b> before the next attempt, another £50, no cap on attempts." } } },
+
+    { phase: 2, k: "d",
+      t: { it: "Puoi dimostrare l'inglese a livello B1?", en: "Can you prove English at level B1?" },
+      d: { it: "B1 del CEFR, solo <b>speaking e listening</b>: né lettura né scrittura.", en: "CEFR B1, in <b>speaking and listening</b> only: no reading, no writing." },
+      side: { k: "act", back: true,
+        t: { it: "Un SELT, oppure un'esenzione", en: "A SELT, or an exemption" },
+        d: { it: "<b>SELT approvato</b> (~£150): IELTS for UKVI, LanguageCert, Trinity College London, Pearson, PSI. La versione accademica o non-UKVI dello stesso esame viene <b>rifiutata</b> anche col livello giusto.<br><b>Esenzioni</b>: under 18, 65+, condizione medica, cittadinanza di un paese anglofono riconosciuto (<b>l'Italia non lo è</b>), laurea insegnata in inglese con verifica <b>Ecctis</b>.<br><b>⚠ Dal 26 marzo 2027 il livello richiesto sale a B2.</b>",
+             en: "An <b>approved SELT</b> (~£150): IELTS for UKVI, LanguageCert, Trinity College London, Pearson, PSI. The academic or non-UKVI version of the same exam is <b>rejected</b> even at the right level.<br><b>Exemptions</b>: under 18, 65+, a medical condition, nationality of a recognised majority English-speaking country (<b>Italy is not one</b>), or a degree taught in English verified by <b>Ecctis</b>.<br><b>⚠ From 26 March 2027 the required level rises to B2.</b>" } } },
+
+    { phase: 2, k: "d",
+      t: { it: "Fedina, tasse e immigrazione in regola?", en: "Criminal record, tax and immigration in order?" },
+      d: { it: "Il requisito del <b>good character</b>, valutato caso per caso.", en: "The <b>good character</b> requirement, assessed case by case." },
+      side: { k: "act", back: true,
+        t: { it: "Sistema il quadro prima di pagare", en: "Put it right before you pay" },
+        d: { it: "Pesano condanne penali (con periodi di preclusione legati alla pena, fino a permanenti), multe stradali non pagate, insolvenze, evasione fiscale o contributiva, debiti NHS oltre soglia, inganno in domande precedenti, ingressi irregolari.<br><b>Dichiarare tutto</b>: la reticenza scoperta vale come <i>deception</i> e pesa più dell'episodio nascosto. Nei casi dubbi, un consulente OISC o un avvocato prima di presentare.",
+             en: "What counts: criminal convictions (with exclusion periods tied to the sentence, up to permanent), unpaid traffic fines, insolvency, tax or National Insurance evasion, NHS debts above the threshold, deception in earlier applications, irregular entry.<br><b>Declare everything</b>: concealment discovered later counts as deception and weighs more than the thing concealed. In doubtful cases, take OISC or solicitor advice before applying." } } },
+
+    { phase: 3, k: "step",
+      t: { it: "Presenta il modulo AN", en: "Submit form AN" },
+      d: { it: "Online su GOV.UK. <b>Circa £1.839</b>, cerimonia da £130 inclusa e riscossa subito. Biometria all'<b>UKVCAS</b>: foto e impronte. <b>Due referees</b>: uno di professione riconosciuta, uno cittadino britannico di 25 anni o più; nessuno dei due parente o tuo rappresentante legale. Allegati: passaporto, eVisa, certificato del test, certificato di inglese, prova di residenza. Il passaporto non si spedisce: si caricano le scansioni.",
+           en: "Online on GOV.UK. <b>About £1,839</b>, including the £130 ceremony fee, charged upfront. Biometrics at <b>UKVCAS</b>: photo and fingerprints. <b>Two referees</b>: one of recognised profession, one British citizen aged 25 or over; neither a relative nor your legal representative. Attachments: passport, eVisa, test certificate, English certificate, proof of residence. You do not post your passport: you upload scans." } },
+
+    { phase: 3, k: "step",
+      t: { it: "Attesa della decisione", en: "Wait for the decision" },
+      d: { it: "Di norma <b>entro 6 mesi</b> dalla presentazione.", en: "Usually <b>within 6 months</b> of submission." } },
+
+    { phase: 3, k: "d",
+      t: { it: "Domanda approvata?", en: "Application approved?" },
+      side: { k: "exit",
+        t: { it: "Rifiuto", en: "Refused" },
+        d: { it: "La tassa <b>non viene rimborsata</b>: torna solo la quota della cerimonia. Puoi chiedere un <i>reconsideration</i> entro i termini indicati nella lettera di rifiuto. Prima di ripresentare, rimuovi la causa: quasi sempre assenze eccessive o good character.",
+             en: "The fee is <b>not refunded</b>: only the ceremony portion comes back. You can request a <i>reconsideration</i> within the deadline given in the refusal letter. Before reapplying, remove the cause: almost always excessive absences or good character." } } },
+
+    { phase: 4, k: "step",
+      t: { it: "Cerimonia di cittadinanza", en: "Citizenship ceremony" },
+      d: { it: "<b>Entro 3 mesi</b> dall'invito, di norma presso il consiglio comunale. <b>Oath</b> di fedeltà al Re e ai suoi eredi — oppure <b>affirmation</b> laica per chi non giura su testi sacri — seguito dal <b>pledge</b> di lealtà al Regno Unito, ai suoi diritti, libertà e leggi. Si ascolta <i>God Save the King</i>. Ti consegnano il <b>certificato di naturalizzazione</b>.",
+           en: "<b>Within 3 months</b> of the invitation, usually at your local council. The <b>oath</b> of allegiance to the King and his heirs — or a secular <b>affirmation</b> for those who do not swear on scripture — followed by the <b>pledge</b> of loyalty to the UK, its rights, freedoms and laws. <i>God Save the King</i> is played. You receive your <b>naturalisation certificate</b>." } },
+
+    { phase: 4, k: "step",
+      t: { it: "Passaporto britannico", en: "British passport" },
+      d: { it: "Domanda online con il certificato di naturalizzazione, un garante e le foto. Da qui in poi: voto in tutte le elezioni e nei referendum, candidabilità, nessun controllo sull'immigrazione, niente più <i>Immigration Health Surcharge</i>.",
+           en: "Apply online with your naturalisation certificate, a countersignatory and photos. From here on: voting in every election and referendum, eligibility to stand, no immigration control, no more Immigration Health Surcharge." } },
+
+    { phase: 4, k: "end",
+      t: { it: "Cittadino britannico — e ancora italiano", en: "A British citizen — and still Italian" },
+      d: { it: "La <b>legge 91/1992</b> ammette la doppia cittadinanza: acquisire quella britannica <b>non fa perdere</b> quella italiana, e il Regno Unito non pone limiti. Resta iscritto all'<b>AIRE</b> presso il Consolato Generale d'Italia e comunica ogni cambio di indirizzo. Regola pratica: entra in Italia con il documento italiano, nel Regno Unito con quello britannico.",
+           en: "Italian <b>Law 91/1992</b> allows dual nationality: taking British citizenship <b>does not cost you</b> your Italian one, and the UK sets no limit either. Stay registered with <b>AIRE</b> at the Italian Consulate General and report every change of address. Practical rule: enter Italy on the Italian document, the UK on the British one." } }
+  ];
+
+  var COPY = {
+    it: {
+      kicker: "Diagramma di flusso · dal visto al passaporto · aggiornato ad agosto 2026",
+      title: "Dal visto al passaporto",
+      sub: "Il percorso decisionale della cittadinanza britannica",
+      note: "Ogni domanda con la sua risposta, i suoi numeri e la sua via d'uscita. Segui la colonna centrale: dove la risposta è <b>no</b>, il riquadro a destra dice cosa fare — e, se il bordo è tratteggiato, si torna alla stessa domanda.",
+      yes: "sì", no: "no", back: "poi torna a questa domanda", exitLabel: "il percorso si ferma qui",
+      legend: [["start", "inizio e fine"], ["d", "domanda"], ["step", "passo da compiere"], ["act", "cosa fare, poi si rientra"], ["exit", "uscita dal percorso"]],
+      cont: "Il flusso continua alla pagina seguente",
+      from: "segue dalla pagina precedente",
+      foot: "Materiale di studio, non consulenza legale. Tariffe e requisiti dell'Home Office cambiano quasi ogni anno: verifica su GOV.UK prima di prenotare, pagare o presentare domanda.",
+      pg: "Pagina", of: "di", print: "Stampa", fit: "Adatta", full: "100%",
+      hint: "Stampa in verticale, senza margini e con la grafica di sfondo attiva."
+    },
+    en: {
+      kicker: "Flowchart · from visa to passport · current to August 2026",
+      title: "From visa to passport",
+      sub: "The decision path to British citizenship",
+      note: "Every question with its answer, its figures and its way out. Follow the central column: where the answer is <b>no</b>, the box on the right says what to do — and if its border is dashed, you come back to the same question.",
+      yes: "yes", no: "no", back: "then come back to this question", exitLabel: "the path stops here",
+      legend: [["start", "start and end"], ["d", "question"], ["step", "step to take"], ["act", "what to do, then rejoin"], ["exit", "exit from the path"]],
+      cont: "The flow continues on the next page",
+      from: "continued from the previous page",
+      foot: "Study material, not legal advice. Home Office fees and requirements change almost every year: check GOV.UK before booking, paying or applying.",
+      pg: "Page", of: "of", print: "Print", fit: "Fit", full: "100%",
+      hint: "Print portrait, borderless, with background graphics on."
+    }
+  };
+
+  var state = { lang: "it", size: "a3", zoom: "fit" };
+  function L(o) { return o ? (o[state.lang] || o.it || o.en) : ""; }
+  function c(k) { return COPY[state.lang][k]; }
+
+  /* ------------------------ i blocchi ------------------------ */
+
+  function blocks() {
+    var out = [];
+    var lastPhase = -1;
+    FLOW.forEach(function (n, i) {
+      if (n.phase !== lastPhase) {
+        lastPhase = n.phase;
+        out.push({ kind: "band", html: band(n.phase) });
+      }
+      out.push({ kind: "row", html: row(n, i) });
+    });
+    return out;
+  }
+
+  function band(i) {
+    var p = PHASES[i];
+    return '<div class="band" style="--hue:var(--p' + (i + 1) + ')">' +
+      '<span class="num">' + (i + 1) + "</span>" +
+      "<h2>" + L(p.t) + "</h2><p>" + L(p.s) + "</p></div>";
+  }
+
+  function row(n, i) {
+    var main;
+    if (n.k === "fork") {
+      main = '<div class="node fork">' +
+        '<p class="q">' + L(n.q) + "</p>" +
+        '<div class="panes">' + n.panes.map(function (p) {
+          return '<div class="pane"><h3>' + L(p.t) + "</h3><p>" + L(p.d) + "</p></div>";
+        }).join("") + "</div></div>";
+    } else {
+      main = '<div class="node ' + n.k + '">' +
+        (n.k === "d" ? '<span class="mark">◆</span>' : "") +
+        "<h3>" + L(n.t) + "</h3>" +
+        (n.d ? "<p>" + L(n.d) + "</p>" : "") + "</div>";
+    }
+
+    var branch = "";
+    if (n.side) {
+      branch =
+        '<div class="hlink"><span class="lbl">' + c("no") + "</span>" +
+          '<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">' +
+            '<line x1="0" y1="5" x2="92" y2="5"/><polygon points="100,5 90,1.4 90,8.6"/></svg>' +
+        "</div>" +
+        '<div class="node side ' + n.side.k + (n.side.back ? " back" : "") + '">' +
+          "<h4>" + L(n.side.t) + "</h4><p>" + L(n.side.d) + "</p>" +
+          '<span class="tail">' + (n.side.back ? "↩ " + c("back") : "■ " + c("exitLabel")) + "</span>" +
+        "</div>";
+    }
+
+    var next = FLOW[i + 1];
+    var link = next
+      ? '<div class="vlink' + (n.k === "d" ? " yes" : "") + '">' +
+          (n.k === "d" ? '<span class="lbl">' + c("yes") + "</span>" : "") +
+          '<svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true">' +
+            '<line x1="5" y1="0" x2="5" y2="92"/><polygon points="5,100 1.4,90 8.6,90"/></svg>' +
+        "</div>"
+      : "";
+
+    return '<div class="row' + (n.side ? "" : " nobranch") + '">' +
+      '<div class="main">' + main + link + "</div>" + branch + "</div>";
+  }
+
+  /* ------------------------ impaginazione ------------------------ */
+
+  var pagesEl, scaler, pageStyle, clipped = false;
+
+  function head(first) {
+    if (!first) {
+      return '<div class="runhead"><b>' + c("title") + "</b><span>" + c("from") +
+        " ←</span><span class=\"r\">" + MAPPA.meta.updated + "</span></div>";
+    }
+    return '<header class="masthead">' +
+      '<span class="kicker">' + c("kicker") + "</span>" +
+      '<div class="row2">' +
+        "<h1>" + c("title") + "<span>" + c("sub") + "</span></h1>" +
+        '<p class="note">' + c("note") + "</p>" +
+        '<ul class="key">' + c("legend").map(function (l) {
+          return '<li><span class="chip ' + l[0] + '"></span>' + l[1] + "</li>";
+        }).join("") + "</ul>" +
+      "</div></header>";
+  }
+
+  function newSheet(i) {
+    var s = document.createElement("article");
+    s.className = "sheet";
+    var fs = pagesEl.style.getPropertyValue("--fs-set");
+    if (fs) s.style.setProperty("--fs", fs);
+    s.innerHTML = head(i === 0) + '<div class="flow"></div>' +
+      '<div class="foot"><span>' + c("foot") + '</span><span class="pg"></span></div>';
+    pagesEl.appendChild(s);
+    return s;
+  }
+
+  function paginate(fs) {
+    pagesEl.innerHTML = "";
+    if (fs) pagesEl.style.setProperty("--fs-set", fs + "mm");
+    var bl = blocks();
+    var sheet = newSheet(0);
+    var area = sheet.querySelector(".flow");
+    clipped = false;
+
+    bl.forEach(function (b) {
+      area.insertAdjacentHTML("beforeend", b.html);
+      if (area.scrollHeight <= area.clientHeight + 0.5) return;
+
+      // non ci sta: si chiude la pagina e il blocco passa a quella dopo
+      area.removeChild(area.lastElementChild);
+      var carry = [b.html];
+
+      // anche la nota "il flusso continua" deve starci: se serve,
+      // scendono con lei gli ultimi blocchi della pagina
+      area.insertAdjacentHTML("beforeend", '<p class="contd">' + c("cont") + " \u2193</p>");
+      while (area.scrollHeight > area.clientHeight + 0.5 && area.children.length > 2) {
+        var prev = area.lastElementChild.previousElementSibling;
+        carry.unshift(prev.outerHTML);
+        area.removeChild(prev);
+      }
+      // e una fascia di fase non resta sola in fondo alla pagina
+      var tail = area.children[area.children.length - 2];
+      if (tail && tail.classList.contains("band")) {
+        carry.unshift(tail.outerHTML);
+        area.removeChild(tail);
+      }
+
+      sheet = newSheet(pagesEl.children.length);
+      area = sheet.querySelector(".flow");
+      carry.forEach(function (h) { area.insertAdjacentHTML("beforeend", h); });
+      if (area.scrollHeight > area.clientHeight + 0.5) clipped = true;
+    });
+
+    var sheets = pagesEl.querySelectorAll(".sheet");
+    sheets.forEach(function (s, i) {
+      s.querySelector(".pg").textContent = c("pg") + " " + (i + 1) + " " + c("of") + " " + sheets.length;
+    });
+    document.getElementById("c-meta").textContent =
+      (state.size === "a3" ? "A3" : "A4") + " · " + sheets.length +
+      (state.lang === "it" ? (sheets.length === 1 ? " pagina" : " pagine") : sheets.length === 1 ? " page" : " pages");
+  }
+
+  /* ------------------------- interfaccia ------------------------- */
+
+  document.getElementById("app").innerHTML =
+    '<div class="controls">' +
+      '<span class="title">Dal visto al passaporto <small id="c-meta"></small></span>' +
+      '<div class="seg"><button class="ctl" id="lang-it">IT</button><button class="ctl" id="lang-en">EN</button></div>' +
+      '<div class="seg"><button class="ctl" id="s-a3">A3</button><button class="ctl" id="s-a4">A4</button></div>' +
+      '<div class="seg"><button class="ctl" id="z-fit"></button><button class="ctl" id="z-full"></button></div>' +
+      '<button class="ctl primary" id="do-print"></button>' +
+    "</div>" +
+    '<p class="deskhint" id="hint"></p>' +
+    '<div class="desk"><div class="scaler" id="scaler"><div class="pages" id="pages" data-size="a3"></div></div></div>';
+
+  pagesEl = document.getElementById("pages");
+  scaler = document.getElementById("scaler");
+  pageStyle = document.createElement("style");
+  document.head.appendChild(pageStyle);
+
+  function applyZoom() {
+    var s = pagesEl.querySelector(".sheet");
+    if (!s) return;
+    var k = state.zoom === "fit"
+      ? Math.min(1, (document.querySelector(".desk").clientWidth - 28) / s.offsetWidth) : 1;
+    scaler.style.transform = "scale(" + k + ")";
+    scaler.style.height = (scaler.scrollHeight * k) + "px";
+    document.getElementById("z-fit").setAttribute("aria-pressed", String(state.zoom === "fit"));
+    document.getElementById("z-full").setAttribute("aria-pressed", String(state.zoom === "full"));
+  }
+
+  function fitPages() {
+    var target = state.size === "a3" ? 1 : 2;
+    var steps = state.size === "a3"
+      ? [2.85, 2.72, 2.6, 2.48, 2.38, 2.28]
+      : [2.08, 2.0, 1.92, 1.85, 1.78, 1.7];
+    var safest = null;
+    for (var i = 0; i < steps.length; i++) {
+      paginate(steps[i]);
+      if (!clipped && safest === null) safest = steps[i];
+      if (!clipped && pagesEl.children.length <= target) return;
+    }
+    // niente ha soddisfatto entrambe le condizioni: si torna al corpo più grande
+    // che almeno non taglia nulla, accettando una pagina in più
+    paginate(safest || steps[steps.length - 1]);
+  }
+
+  function setSize(sz) {
+    state.size = sz;
+    pagesEl.dataset.size = sz;
+    pageStyle.textContent = "@page { size: " + (sz === "a3" ? "A3" : "A4") + " portrait; margin: 0; }";
+    document.getElementById("s-a3").setAttribute("aria-pressed", String(sz === "a3"));
+    document.getElementById("s-a4").setAttribute("aria-pressed", String(sz === "a4"));
+    fitPages(); applyZoom();
+  }
+
+  function setLang(l) {
+    state.lang = l;
+    document.documentElement.lang = l;
+    document.getElementById("lang-it").setAttribute("aria-pressed", String(l === "it"));
+    document.getElementById("lang-en").setAttribute("aria-pressed", String(l === "en"));
+    labels(); fitPages(); applyZoom();
+  }
+
+  function labels() {
+    document.getElementById("z-fit").textContent = c("fit");
+    document.getElementById("z-full").textContent = c("full");
+    document.getElementById("do-print").textContent = c("print");
+    document.getElementById("hint").textContent = c("hint");
+  }
+
+  document.getElementById("lang-it").onclick = function () { setLang("it"); };
+  document.getElementById("lang-en").onclick = function () { setLang("en"); };
+  document.getElementById("s-a3").onclick = function () { setSize("a3"); };
+  document.getElementById("s-a4").onclick = function () { setSize("a4"); };
+  document.getElementById("z-fit").onclick = function () { state.zoom = "fit"; applyZoom(); };
+  document.getElementById("z-full").onclick = function () { state.zoom = "full"; applyZoom(); };
+  document.getElementById("do-print").onclick = function () { window.print(); };
+
+  var rt;
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(applyZoom, 150); });
+
+  document.getElementById("lang-it").setAttribute("aria-pressed", "true");
+  labels();
+  setSize("a3");
+  if (document.fonts) document.fonts.ready.then(function () { fitPages(); applyZoom(); });
+})();
+
+</script>
