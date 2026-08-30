@@ -27,7 +27,7 @@ manuale ufficiale copre la procedura di naturalizzazione, il requisito di ingles
 Le aree 4-8 seguono i cinque capitoli di *Life in the United Kingdom: A Guide for New
 Residents*, 3ª edizione (2013), l'unica fonte da cui escono le domande d'esame.
 
-## Due formati
+## Tre formati
 
 **Mappa interattiva** (`index.html`) — da esplorare a schermo, area per area.
 
@@ -37,17 +37,25 @@ la linea del tempo delle date che tornano più spesso, i numeri dell'esame, i nu
 domanda, le cifre delle istituzioni e le quattro nazioni con i loro santi patroni.
 Il corpo del testo si adatta da solo per stare sempre in una pagina sola.
 
-Tre PDF già pronti in `stampa/`:
+**Foglio di ripasso** (`facts.html`) — in inglese, e solo i **concetti d'esame**: i 193
+fatti dei cinque capitoli del manuale, ognuno per esteso. Niente procedura, niente
+burocrazia. Si impagina da solo su 3 pagine A4 verticali o 2 pagine A3 orizzontali,
+con i titoli ripetuti quando un argomento prosegue nella colonna successiva.
 
-| File | Formato |
-|------|---------|
-| `poster-cittadinanza-A3-it.pdf` | A3 orizzontale, italiano |
-| `poster-cittadinanza-A4-it.pdf` | A4 orizzontale, italiano |
-| `poster-citizenship-A3-en.pdf` | A3 orizzontale, inglese |
+PDF già pronti in `stampa/`:
 
-Per la resa tipografica migliore conviene però stampare da `poster.html` nel browser
-(*Stampa* → orizzontale, margini nulli, grafica di sfondo attiva): i PDF qui sopra sono
-stati generati in un ambiente senza accesso a Google Fonts e usano caratteri sostitutivi.
+| File | Formato | Contenuto |
+|------|---------|-----------|
+| `poster-cittadinanza-A3-it.pdf` | A3 orizzontale, 1 pagina | mappa completa, italiano |
+| `poster-cittadinanza-A4-it.pdf` | A4 orizzontale, 1 pagina | mappa completa, italiano |
+| `poster-citizenship-A3-en.pdf` | A3 orizzontale, 1 pagina | mappa completa, inglese |
+| `life-in-the-uk-facts-A4-en.pdf` | A4 verticale, 3 pagine | i 193 fatti, inglese |
+| `life-in-the-uk-facts-A3-en.pdf` | A3 orizzontale, 2 pagine | i 193 fatti, inglese |
+| `life-in-the-uk-fatti-A4-it.pdf` | A4 verticale, 3 pagine | i 193 fatti, italiano |
+
+Per la resa tipografica migliore conviene però stampare dalle pagine nel browser
+(*Stampa* → margini nulli, grafica di sfondo attiva): i PDF qui sopra sono stati generati
+in un ambiente senza accesso a Google Fonts e usano caratteri sostitutivi.
 
 ## Come si usa
 
@@ -66,12 +74,15 @@ stati generati in un ambiente senza accesso a Google Fonts e usano caratteri sos
 ```
 index.html            mappa interattiva
 poster.html           poster stampabile A3 / A4
+facts.html            foglio di ripasso, solo i concetti d'esame
 assets/data.js        i 63 nodi bilingui (contenuti e link) — sorgente unica
 assets/style.css      stile della mappa, token di colore per tema chiaro e scuro
 assets/app.js         layout radiale, pan/zoom, pannello, ricerca, indice
 assets/poster.css     stile del poster (foglio sempre bianco, misure in mm)
 assets/poster.js      composizione del poster, fascia di ripasso, adattamento del corpo
-build.py              compila mappa e poster in file autonomi
+assets/facts.css      stile del foglio di ripasso
+assets/facts.js       impaginazione su più pagine, colonna per colonna
+build.py              compila i tre file autonomi
 dist/                 i file autonomi prodotti da build.py
 stampa/               i PDF pronti da stampare
 ```
@@ -81,10 +92,11 @@ si aprono direttamente nel browser. Per ottenere i file singoli da condividere o
 offline:
 
 ```sh
-python3 build.py     # → dist/mappa-cittadinanza-uk.html e dist/poster-cittadinanza-uk.html
+python3 build.py     # → i tre file in dist/
 ```
 
-Mappa e poster leggono lo stesso `assets/data.js`: una correzione si riflette su entrambi.
+Mappa, poster e foglio di ripasso leggono lo stesso `assets/data.js`: una correzione si
+riflette su tutti e tre.
 Per aggiungere o correggere una voce basta modificare `assets/data.js`: ogni nodo ha
 `id`, `p` (il genitore), `code`, titolo e sintesi bilingui, blocchi di contenuto
 (`p`, `ul`, `kv`, `warn`) e i link di approfondimento. Il layout si adatta da solo.

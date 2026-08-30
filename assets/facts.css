@@ -1,0 +1,233 @@
+/* ============================================================
+   Life in the UK Facts — foglio di ripasso stampabile
+   Solo i cinque capitoli del manuale: i concetti d'esame, non la
+   procedura. Corpo del testo fisso: cambia il numero di pagine,
+   non la leggibilità.
+   ============================================================ */
+
+:root {
+  --desk: #DDE2DC;
+  --desk-ink: #14202E;
+  --desk-mute: #5B6A7C;
+  --desk-line: #C4CCC4;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0C1219; --desk-ink: #E5EDF4; --desk-mute: #92A3B4; --desk-line: #26323F;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0C1219; --desk-ink: #E5EDF4; --desk-mute: #92A3B4; --desk-line: #26323F;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--desk);
+  color: var(--desk-ink);
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================ COMANDI ============================ */
+
+.controls {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--desk) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--desk-line);
+}
+.controls .title {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 17px; font-weight: 600; margin-right: auto;
+}
+.controls .title small {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--desk-mute); margin-left: 8px;
+}
+.ctl {
+  height: 32px; padding: 0 11px;
+  font: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--desk-ink);
+  background: color-mix(in srgb, var(--desk) 60%, #fff 40%);
+  border: 1px solid var(--desk-line); border-radius: 7px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.ctl:hover { border-color: var(--desk-mute); }
+.ctl[aria-pressed="true"] { background: var(--desk-ink); color: var(--desk); border-color: var(--desk-ink); }
+.ctl.primary { background: #A81D26; border-color: #A81D26; color: #fff; }
+.ctl.primary:hover { background: #8E141C; }
+.seg { display: inline-flex; border: 1px solid var(--desk-line); border-radius: 7px; overflow: hidden; }
+.seg .ctl { border: 0; border-radius: 0; }
+.seg .ctl + .ctl { border-left: 1px solid var(--desk-line); }
+:focus-visible { outline: 2px solid #A81D26; outline-offset: 2px; }
+
+.deskhint { text-align: center; color: var(--desk-mute); font-size: 12px; padding: 16px 14px 0; }
+
+/* ============================= LE PAGINE ============================= */
+
+.desk { padding: 20px 14px 60px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.scaler { transform-origin: top center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+
+.sheet {
+  --ink:    #14202E;
+  --ink-2:  #46566A;
+  --ink-3:  #7C8B9B;
+  --rule:   #C3CCC4;
+  --rule-2: #E2E7E0;
+  --accent: #A81D26;
+  --c-ch1: #6B3A6E; --c-ch2: #3D6B2E; --c-ch3: #8A5A17;
+  --c-ch4: #A03A5C; --c-ch5: #2A5680;
+
+  width: var(--pw);
+  height: var(--ph);
+  padding: var(--pad);
+  background: #fff;
+  color: var(--ink);
+  font-size: var(--fs);
+  line-height: 1.28;
+  box-shadow: 0 2px 8px rgba(0,0,0,.14), 0 18px 50px rgba(0,0,0,.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* il corpo resta identico nei due formati: cambia quante pagine servono */
+.pages[data-size="a4"] .sheet { --pw: 210mm; --ph: 297mm; --pad: 11mm; --fs: 2.62mm; --ncol: 3; }
+.pages[data-size="a3"] .sheet { --pw: 420mm; --ph: 297mm; --pad: 11mm; --fs: 2.62mm; --ncol: 6; }
+
+/* ------------------------------ testata ------------------------------ */
+
+.masthead { flex: none; border-bottom: 0.5mm solid var(--ink); padding-bottom: .9em; margin-bottom: 1em; }
+.masthead .kicker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .8em; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--accent); display: block; margin-bottom: .5em;
+}
+.masthead .row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1.1em 2em; }
+.masthead h1 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 3em; font-weight: 600; line-height: .98;
+  letter-spacing: -0.02em; margin: 0; flex: none;
+}
+.pages[data-size="a3"] .masthead h1 { font-size: 3.5em; }
+.masthead h1 span {
+  display: block; font-size: .42em; font-style: italic; font-weight: 400;
+  color: var(--ink-3); letter-spacing: 0; margin-top: .4em;
+}
+.masthead .note { font-size: .95em; color: var(--ink-2); margin: 0 0 .2em; flex: 1 1 24em; min-width: 20em; }
+.masthead .note b { color: var(--ink); font-weight: 600; }
+.masthead .legend {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: .9em;
+  flex: 1 1 100%;
+  padding-bottom: .15em;
+}
+.pages[data-size="a3"] .masthead .legend { flex: 0 0 auto; margin-left: auto; width: 78em; }
+.masthead .legend div { text-align: left; min-width: 0; }
+.masthead .legend .sw { display: block; width: 100%; height: 0.9mm; margin-bottom: .4em; }
+.masthead .legend .lb {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .74em; letter-spacing: .04em; color: var(--ink-2); line-height: 1.25; display: block;
+}
+.masthead .legend .ct { font-size: .74em; color: var(--ink-3); display: block; }
+
+.runhead {
+  flex: none; display: flex; align-items: baseline; gap: 1em;
+  border-bottom: 0.3mm solid var(--rule); padding-bottom: .5em; margin-bottom: .9em;
+  font-family: "IBM Plex Mono", monospace; font-size: .78em;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+}
+.runhead b { color: var(--ink); font-weight: 500; }
+.runhead .r { margin-left: auto; letter-spacing: .04em; }
+
+/* ------------------------------ colonne ------------------------------ */
+
+.cols { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 1.5em; }
+.col { flex: 1 1 0; min-width: 0; height: 100%; overflow: hidden; position: relative; }
+.col + .col { border-left: 0.2mm solid var(--rule-2); padding-left: 1.5em; margin-left: -.75em; }
+
+.chapter {
+  border-top: 0.6mm solid var(--hue);
+  padding-top: .55em;
+  margin: 1.4em 0 .7em;
+}
+.chapter:first-child { margin-top: 0; }
+.chapter .n {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .74em; letter-spacing: .1em; color: var(--hue); font-weight: 500;
+}
+.chapter h2 {
+  font-family: "Newsreader", Georgia, serif;
+  font-size: 1.5em; font-weight: 600; line-height: 1.06; margin: .1em 0 0;
+  text-wrap: balance;
+}
+.chapter .it {
+  font-family: "Newsreader", Georgia, serif;
+  font-style: italic; font-size: .95em; color: var(--ink-3); display: block; margin-top: .1em;
+}
+
+.topic { margin: .95em 0 .35em; }
+.topic:first-child { margin-top: 0; }
+.topic h3 {
+  font-size: 1.02em; font-weight: 700; line-height: 1.14; margin: 0;
+  color: var(--hue);
+  letter-spacing: -0.005em;
+}
+.topic .code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .72em; color: var(--ink-3); font-weight: 400; margin-right: .35em;
+  font-variant-numeric: tabular-nums;
+}
+.topic .cont { font-weight: 400; font-style: italic; color: var(--ink-3); }
+
+.fact { margin: .3em 0 0; padding-left: .85em; text-indent: -.85em; }
+.fact.kv .k {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: .88em; font-weight: 500; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.fact.kv .k::after { content: " ·"; color: var(--ink-3); }
+.fact.li::before { content: "▪"; color: var(--hue); font-size: .7em; margin-right: .45em; vertical-align: .1em; }
+.fact.p { color: var(--ink-2); font-style: italic; padding-left: 0; text-indent: 0; margin-top: .35em; }
+.fact.warn {
+  padding: .35em .5em; margin-top: .45em; text-indent: 0;
+  border-left: 0.7mm solid var(--accent);
+  background: #FAF6F0;
+  color: var(--ink-2);
+}
+.fact strong, .fact b { font-weight: 700; color: var(--ink); }
+.fact em { font-style: italic; }
+
+/* ---------------------------- piè di pagina ---------------------------- */
+
+.foot {
+  flex: none; margin-top: .9em; padding-top: .5em;
+  border-top: 0.3mm solid var(--rule);
+  display: flex; gap: 1.2em; align-items: baseline;
+  font-size: .76em; color: var(--ink-3);
+  font-family: "IBM Plex Mono", monospace; letter-spacing: .03em;
+}
+.foot .pg { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; flex: none; }
+.foot > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* =============================== STAMPA =============================== */
+
+@page { margin: 0; }
+
+@media print {
+  body { background: #fff; }
+  .controls, .deskhint { display: none !important; }
+  .desk { padding: 0; display: block; gap: 0; }
+  .scaler { transform: none !important; height: auto !important; display: block; gap: 0; }
+  .sheet { box-shadow: none; break-after: page; }
+  .sheet:last-child { break-after: auto; }
+}

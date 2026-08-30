@@ -398,7 +398,7 @@ body {
   body { background: #fff; }
   .controls, .deskhint { display: none !important; }
   .desk { padding: 0; display: block; }
-  .scaler { transform: none !important; }
+  .scaler { transform: none !important; height: auto !important; }
   .poster { box-shadow: none; }
 }
 

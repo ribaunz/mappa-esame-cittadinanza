@@ -37,6 +37,8 @@ TARGETS = [
      ["assets/data.js", "assets/app.js"], '<div class="app" id="app"></div>'),
     ("poster-cittadinanza-uk.html", "Poster della Cittadinanza", "assets/poster.css",
      ["assets/data.js", "assets/poster.js"], '<div id="app"></div>'),
+    ("life-in-the-uk-facts.html", "Life in the UK Facts", "assets/facts.css",
+     ["assets/data.js", "assets/facts.js"], '<div id="app"></div>'),
 ]
 
 (BASE / "dist").mkdir(exist_ok=True)
